@@ -562,13 +562,9 @@ hl.window_rule({
 	move = "276 44",
 })
 
--- Dank Calendar gets the same treatment as Planify: its own special workspace,
--- opened and hidden with Super+D, and the geometry it had on workspace 3
--- (1143x567 at 97,38) so it looks the same wherever it appears.
---
--- Split into two rules for the same reason as Planify above: one Lua table
--- cannot hold two `move` keys. Order is definition order -- onto the special
--- workspace first, geometry second.
+-- Dank Calendar gets its own special workspace, opened and hidden with Super+D.
+-- It tiles rather than floating, so unlike Planify above it needs no second rule
+-- for geometry.
 hl.window_rule({
 	name = "dankcalendar-special-workspace",
 	match = { class = "^com[.]danklinux[.]dankcalendar$" },
@@ -576,14 +572,7 @@ hl.window_rule({
 	workspace = "special:dank",
 })
 
-hl.window_rule({
-	name = "dankcalendar-floating",
-	match = { class = "^com[.]danklinux[.]dankcalendar$" },
-
-	float = true,
-	size = "1143 567",
-	move = "97 38",
-})
+-- No float/size/move rule for Dank Calendar: it tiles like any other window.
 
 hl.window_rule({
 	name = "kitty-no-blur",
