@@ -1,0 +1,93 @@
+//   _____ _____ _____ _____ _____ _____ _____ _____ _____ 
+//  |   __|  _  |   __|_   _|   __|   __|_   _|     |  |  |
+//  |   __|     |__   | | | |   __|   __| | | |   --|     |
+//  |__|  |__|__|_____| |_| |__|  |_____| |_| |_____|__|__|  HYPRLAND
+//
+//  by Bina
+
+
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    // "type": "small" resolves to the arch_small logo, which is 7 lines of art.
+    //
+    // There is deliberately no "height" and no "padding" here. Both were set
+    // before and both fought the logo:
+    //
+    //   height is a MINIMUM row count, not a scale factor. arch_small is 7 lines
+    //   tall, so height:14 padded the logo box out to 14 rows -- 7 lines of art
+    //   followed by 7 blank ones. Measured: the logo alone is 7 rows without it
+    //   and 15 with it.
+    //
+    //   padding.top:2 then shifted the art down two more rows, so it started
+    //   beside the Shell line instead of the OS line.
+    //
+    //   Together they made the logo block 17 rows tall against a 13-row module
+    //   list, which is the visible gap. Neither key changes the art's size, only
+    //   the space around it, so dropping both is what actually fixes it.
+    "logo": {
+    	"source": "arch",
+    	"type": "small"
+    },
+    "display": {
+        "separator": " "
+    },
+    "modules": [
+	
+	
+        "break",
+        {
+            "type": "os",
+            "key": " ",
+            "keyColor": "34",  // = color4
+        },
+        {
+            "type": "shell",
+            "key": " ",
+            "keyColor": "34", 
+        },
+        {
+            "type": "terminal",
+            "key": " ",
+            "keyColor": "34", 
+        },
+        {
+            "type": "wm",
+            "key": " ",
+            "keyColor": "34", 
+        },
+       {
+             "type": "memory",
+            "key": "󰍛 ",
+            "keyColor": "34"
+        },
+        {
+             "type": "swap",
+            "key": "󰾴 ",
+            "keyColor": "34"
+        },
+        {
+            "type": "disk",
+            "key": " ",
+            "keyColor": "34"
+        },
+        {
+            "type": "uptime",
+            "key": " ",
+            "keyColor": "34", 
+        },
+        {
+            "type": "command",
+            "key": "󱦟 ",
+            "keyColor": "34",
+            "text": "birth_install=$(stat -c %W /); current=$(date +%s); time_progression=$((current - birth_install)); days_difference=$((time_progression / 86400)); echo $days_difference days"
+        },
+        "break",
+        {
+            "type": "custom",
+            "format": "\u001b[90m  \u001b[31m  \u001b[32m  \u001b[33m  \u001b[34m  \u001b[35m  \u001b[36m  \u001b[37m"
+        },
+        "break",
+        "break",
+    ]
+}
+

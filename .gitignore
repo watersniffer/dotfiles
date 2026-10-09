@@ -12,3 +12,17 @@ config/mpv/mpv.conf
 config/btop/btop.conf
 config/wlogout/style.css
 config/wal/zsh-prompt.zsh
+
+# Electron / browser app data - huge, machine-specific, never commit.
+config/Notion/
+config/mozilla/
+config/zen/
+config/librewolf/
+config/net.imput.helium*/
+config/youtube/
+config/vesktop/
+config/thunderbird/
+config/WhatsApp Desktop/
+config/Mailspring/
+config/FreeTube/
+config/VacuumTube/
