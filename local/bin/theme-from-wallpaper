@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+WAL_CACHE="$HOME/.cache/wal"
+
+wallpaper="$(awww query 2>/dev/null | grep -oE '/[^ ]+\.(jpe?g|png|webp|avif)' | head -1)"
+
+if [[ -z $wallpaper || ! -f $wallpaper ]]; then
+    printf 'theme-from-wallpaper: no wallpaper set, cannot derive a theme\n' >&2
+    exit 1
+fi
+
+printf 'theme-from-wallpaper: %s\n' "$(basename "$wallpaper")" >&2
+
+wal -i "$wallpaper" -n -s -q
+status=$?
+
+if ((status != 0)); then
+    printf 'theme-from-wallpaper: pywal could not read a palette from this image\n' >&2
+    printf 'theme-from-wallpaper: keeping the previous theme, wallpaper unchanged\n' >&2
+    exit "$status"
+fi
+
+install_if_staged() {
+    local src="$WAL_CACHE/$1" dst="$2"
+    if [[ -f $src ]]; then
+        cp -f "$src" "$dst"
+    else
+        printf 'theme-from-wallpaper: missing template %s, %s left alone\n' "$1" "$dst" >&2
+    fi
+}
+
+install_if_staged waybar-colors.css       "$HOME/.config/waybar/colors.css"
+install_if_staged rofi-colors.rasi        "$HOME/.config/rofi/colors.rasi"
+install_if_staged kitty-current-theme.conf "$HOME/.config/kitty/current-theme.conf"
+install_if_staged hypr-theme.lua          "$HOME/.config/hypr/theme.lua"
+install_if_staged gtk-colors.css          "$HOME/.config/gtk-3.0/colors.css"
+install_if_staged gtk-colors.css          "$HOME/.config/gtk-4.0/colors.css"
+install_if_staged gtk3-theme-colors.css   "$HOME/.config/gtk-3.0/theme-colors.css"
+install_if_staged swaync-style.css        "$HOME/.config/swaync/style.css"
+install_if_staged mako-config             "$HOME/.config/mako/config"
+install_if_staged mpv-conf                "$HOME/.config/mpv/mpv.conf"
+install_if_staged btop-theme.theme        "$HOME/.config/btop/themes/wallpaper.theme"
+install_if_staged qt6ct-conf              "$HOME/.config/qt6ct/qt6ct.conf"
+install_if_staged qt6ct-conf              "$HOME/.config/qt5ct/qt5ct.conf"
+install_if_staged nvim-colors.lua         "$HOME/.config/nvim/colors/wallpaper.lua"
+install_if_staged nvim-theme.lua          "$HOME/.config/nvim/lua/config/theme.lua"
+install_if_staged zsh-prompt.zsh          "$HOME/.config/wal/zsh-prompt.zsh"
+
+if [[ -f $WAL_CACHE/wlogout-style.css ]]; then
+    wl_conf="${XDG_CONFIG_HOME:-$HOME/.config}/wlogout"
+    if mkdir -p "$wl_conf" && install -m 644 "$WAL_CACHE/wlogout-style.css" "$wl_conf/style.css"; then
+        printf 'theme-from-wallpaper: installed wlogout palette to %s\n' "$wl_conf/style.css" >&2
+    else
+        printf 'theme-from-wallpaper: wlogout palette NOT installed (copy failed)\n' >&2
+    fi
+fi
+
+hyprctl reload config-only >/dev/null 2>&1
+
+if pgrep -x waybar >/dev/null 2>&1; then
+    pkill -USR2 -x waybar 2>/dev/null || true
+fi
+
+kitty @ --to unix:@kitty-"$USER" set-colors --configured --all -sw >/dev/null 2>&1 || true
+
+if pgrep -x swaync >/dev/null 2>&1; then
+    swaync-client --reload-css -sw >/dev/null 2>&1 || true
+fi

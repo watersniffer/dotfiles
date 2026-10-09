@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""xrdb -query, answered from pywal's palette instead of an X server.
+
+WHY THIS EXISTS
+---------------
+`wal` itself shells out to `xrdb -merge` after writing a palette. The real xrdb
+is not installed, and it is not installable from this machine's repositories: it
+lives in xorg-x11-server, which is absent from the sync databases entirely, so
+`pacman -F /usr/bin/xrdb` cannot even find it. Without something answering that
+name, `wal` exits 1 and no theme is generated at all -- verified by moving this
+file aside and re-running it.
+
+Installing an X11 server onto a pure Wayland system to read a colour file pywal
+already wrote to disk is the wrong trade, so this answers it from
+~/.cache/wal/colors.json instead.
+
+(There was a second caller, spicetify, which resolved ${xrdb:colorN} the same way.
+That is gone as of the Spotify removal; this script remains for wal's own sake.)
+
+WHAT xrdb -query ACTUALLY PRINTS
+--------------------------------
+One line per resource, `name:  value`, with the two spaces. The real xrdb
+prefixes each line with the screen spec ("screen:") when reading from a live
+display; consumers here only need a name, a colon, optional whitespace and then
+a non-space value per line, so a bare `name:  value` is what this prints.
+
+    *.foreground:
+    *background:
+
+Both spellings are emitted deliberately, because pywal's own templates disagree
+with themselves about which is canonical: colors.Xresources uses `*.foreground`,
+while other consumers' templates use `*foreground`. Emitting both costs two
+lines and removes the guesswork.
+
+USAGE
+-----
+    xrdb -query          print the palette
+    xrdb -query <name>   print one resource's value
+
+Callers and what they pass
+--------------------------
+pywal's own reload path uses `-merge`; spicetify used `-query`, sometimes with
+`-quiet`, and is gone. `-quiet` only suppresses chatter and `-merge` asks the
+real xrdb to merge a resource file; neither changes what is printed, and both are
+accepted and ignored here. Anything that *would* change the result is still
+refused, so a caller expecting real X semantics gets a clear error instead of a
+plausible-looking palette.
+"""
+import json
+import os
+import sys
+
+WAL = os.environ.get("PYWAL_COLORS", os.path.expanduser("~/.cache/wal/colors.json"))
+
+def load() -> dict:
+    try:
+        with open(WAL, encoding="utf-8") as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        sys.exit(
+            f"xrdb: {WAL} not found.\n"
+            "xrdb: run `wal -i <image>` to generate a palette first."
+        )
+    except json.JSONDecodeError as exc:
+        sys.exit(f"xrdb: {WAL} is not valid JSON: {exc}")
+
+def build_resources(data: dict) -> dict:
+    """Return {resource name: value} from pywal's colors.json.
+
+    pywal stores the ramp under "colors" (color0..color15) and the three named
+    ones under "special" (background, foreground, cursor). spicetify's color.ini
+    only ever asks for colorN, but the special ones are included because they are
+    free and make the shim behave sensibly for anything else that asks.
+    """
+    res = {}
+    for name, value in data.get("colors", {}).items():
+        res[name] = value
+    for name, value in data.get("special", {}).items():
+        res.setdefault(name, value)
+    return res
+
+def main() -> None:
+    args = [a for a in sys.argv[1:] if not a.startswith("-")]
+    flags = [a for a in sys.argv[1:] if a.startswith("-")]
+
+    inert = {"-query", "-quiet", "-q", "-merge", "-nocompact", "-n"}
+    fatal = [f for f in flags if f not in inert]
+    if fatal and "-query" not in flags:
+        sys.exit(
+            f"xrdb: unsupported flags {fatal}.\n"
+            "xrdb: this shim only implements -query."
+        )
+
+    res = build_resources(load())
+
+    if "-merge" in flags and "-query" not in flags:
+        return
+
+    if args:
+
+        name = args[0]
+        for candidate in (name, f"*{name}", f"*.{name}"):
+            if candidate in res:
+                print(res[candidate])
+                return
+        sys.exit(f"xrdb: no such resource: {name}")
+
+    for name, value in sorted(res.items()):
+
+        print(f"*.{name}:  {value}")
+        print(f"*{name}:  {value}")
+
+if __name__ == "__main__":
+    main()

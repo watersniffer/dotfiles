@@ -1,0 +1,10 @@
+osd-color={color15}
+sub-color={color7}
+background-color={color0}
+secondary-sub-color={color1}
+
+no-border=false
+border-color={color4}
+
+screenshot-format=png
+screenshot-highlight-color={color4}

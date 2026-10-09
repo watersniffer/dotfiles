@@ -1,0 +1,28 @@
+* {{
+    bg0     : {color0};
+    bg1     : {color8};
+    bg2     : {color1};
+    bg3     : {color2};
+
+    fg0     : {color15};
+    fg1     : {color7};
+    fg2     : {color8};
+
+    red     : {color1};
+    green   : {color2};
+    yellow  : {color3};
+    blue    : {color4};
+    magenta : {color5};
+    cyan    : {color6};
+    orange  : {color14};
+
+    accent  : {color4};
+    urgent  : {color1};
+
+    windowBg  : {color0};
+    surfaceBg : {color8};
+    borderSoft : {color2};
+    selectedBg : {color1};
+    onSelected : {color15};
+    onUrgent   : {color0};
+}}
