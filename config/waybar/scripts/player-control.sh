@@ -13,8 +13,6 @@ get_playing_player() {
     return 1
 }
 
-# If we already know which player Waybar was controlling,
-# use that player first.
 if [[ -f "$STATE_FILE" ]]; then
     PLAYER="$(cat "$STATE_FILE")"
 

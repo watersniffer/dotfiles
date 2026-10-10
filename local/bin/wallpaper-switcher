@@ -36,7 +36,9 @@ THEME_HOOK="$HOME/.local/bin/theme-from-wallpaper"
 matuwall --directory "$dir" \
          --backend awww \
          --backend-arg --transition-type \
-         --backend-arg fade \
+         --backend-arg grow \
+         --backend-arg --transition-pos \
+         --backend-arg center \
          --backend-arg --transition-duration \
          --backend-arg 1.5 \
          --no-preview \

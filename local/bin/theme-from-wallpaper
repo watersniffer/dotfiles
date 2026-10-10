@@ -32,8 +32,7 @@ install_if_staged() {
 }
 
 install_if_staged waybar-colors.css       "$HOME/.config/waybar/colors.css"
-install_if_staged rofi-colors.rasi        "$HOME/.config/rofi/colors.rasi"
-install_if_staged kitty-current-theme.conf "$HOME/.config/kitty/current-theme.conf"
+# rofi is frozen to match the bar, so not regenerated here.
 install_if_staged hypr-theme.lua          "$HOME/.config/hypr/theme.lua"
 install_if_staged gtk-colors.css          "$HOME/.config/gtk-3.0/colors.css"
 install_if_staged gtk-colors.css          "$HOME/.config/gtk-4.0/colors.css"
@@ -44,9 +43,9 @@ install_if_staged mpv-conf                "$HOME/.config/mpv/mpv.conf"
 install_if_staged btop-theme.theme        "$HOME/.config/btop/themes/wallpaper.theme"
 install_if_staged qt6ct-conf              "$HOME/.config/qt6ct/qt6ct.conf"
 install_if_staged qt6ct-conf              "$HOME/.config/qt5ct/qt5ct.conf"
+install_if_staged zsh-prompt.zsh          "$HOME/.config/wal/zsh-prompt.zsh"
 install_if_staged nvim-colors.lua         "$HOME/.config/nvim/colors/wallpaper.lua"
 install_if_staged nvim-theme.lua          "$HOME/.config/nvim/lua/config/theme.lua"
-install_if_staged zsh-prompt.zsh          "$HOME/.config/wal/zsh-prompt.zsh"
 
 if [[ -f $WAL_CACHE/wlogout-style.css ]]; then
     wl_conf="${XDG_CONFIG_HOME:-$HOME/.config}/wlogout"
@@ -57,13 +56,17 @@ if [[ -f $WAL_CACHE/wlogout-style.css ]]; then
     fi
 fi
 
+# Zen userChrome.css, same palette.
+if [[ -x $HOME/zenwal/scripts/update-zen-colors.sh ]]; then
+    "$HOME/zenwal/scripts/update-zen-colors.sh" >/dev/null 2>&1 \
+        || printf 'theme-from-wallpaper: Zen colors not updated\n' >&2
+fi
+
 hyprctl reload config-only >/dev/null 2>&1
 
 if pgrep -x waybar >/dev/null 2>&1; then
     pkill -USR2 -x waybar 2>/dev/null || true
 fi
-
-kitty @ --to unix:@kitty-"$USER" set-colors --configured --all -sw >/dev/null 2>&1 || true
 
 if pgrep -x swaync >/dev/null 2>&1; then
     swaync-client --reload-css -sw >/dev/null 2>&1 || true

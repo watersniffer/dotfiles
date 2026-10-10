@@ -1,28 +1,33 @@
+/* Frozen on purpose: no pywal colour placeholders, so the wallpaper switcher
+   does not rewrite this file and the launcher stops changing with the wallpaper.
+   Matches the bar: opaque black background, fixed text colours.
+   Careful: never write a pywal placeholder inside this comment, not even to say
+   there are none. pywal substitutes the whole file and dies on the stray token. */
 * {{
-    bg0     : {color0};
-    bg1     : {color8};
-    bg2     : {color1};
-    bg3     : {color2};
+    bg0     : #000000;
+    bg1     : #2a2a2a;
+    bg2     : #1a1a1a;
+    bg3     : #333333;
 
-    fg0     : {color15};
-    fg1     : {color7};
-    fg2     : {color8};
+    fg0     : #e5e4db;
+    fg1     : #e5e4db;
+    fg2     : #9a9a94;
 
-    red     : {color1};
-    green   : {color2};
-    yellow  : {color3};
-    blue    : {color4};
-    magenta : {color5};
-    cyan    : {color6};
-    orange  : {color14};
+    red     : #e06c75;
+    green   : #98c379;
+    yellow  : #e5c07b;
+    blue    : #61afef;
+    magenta : #c678dd;
+    cyan    : #56b6c2;
+    orange  : #d19a66;
 
-    accent  : {color4};
-    urgent  : {color1};
+    accent  : #61afef;
+    urgent  : #e06c75;
 
-    windowBg  : {color0};
-    surfaceBg : {color8};
-    borderSoft : {color2};
-    selectedBg : {color1};
-    onSelected : {color15};
-    onUrgent   : {color0};
+    windowBg  : #000000;
+    surfaceBg : #000000;
+    borderSoft : #333333;
+    selectedBg : #1a1a1a;
+    onSelected : #e5e4db;
+    onUrgent   : #000000;
 }}

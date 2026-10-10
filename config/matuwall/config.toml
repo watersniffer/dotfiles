@@ -1,0 +1,35 @@
+# matuwall, the picker behind Super+W. AMOLED black, matching the desk.
+
+[general]
+directory = "/home/water/Pictures/Wallpapers"
+backend = "awww"
+
+[window]
+preview = false
+close_on_focus_loss = false
+position = "bottom"
+background = "#000000ff"
+margin = 34
+edge_margin = 24
+radius = 10
+
+[grid]
+columns = 5
+visible_rows = 1
+carousel = true
+edge = "auto"
+spacing = 16
+radius = 0
+border_width = 0
+shadow_width = 0
+ring_width = 2
+
+[colors]
+tile = "#00000000"
+border = "#00000000"
+shadow = "#00000000"
+ring = "#d7d6df"
+spinner = "#d7d6df"
+
+[hooks]
+on_apply = ["/home/water/.local/bin/theme-from-wallpaper"]

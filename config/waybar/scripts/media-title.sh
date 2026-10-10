@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
 
-# Media title for the centre of the bar.
-#
-# This exists because waybar's mpris module always renders a label, even when
-# nothing is playing. Styled as one of the bar's island pills, that empty label
-# showed up as a stray capsule in the middle of the bar. A custom/ module with
-# "hide-empty-text": true drops the module entirely instead, so the pill only
-# exists while there is something to show.
-#
-# Prints "<artist> - <title>" and exits 0 while a player is playing or paused,
-# and prints nothing (exit 0) when there is no player, so waybar hides it.
-
 status=$(playerctl status 2>/dev/null) || exit 0
 
 case "$status" in

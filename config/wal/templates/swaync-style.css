@@ -1,6 +1,16 @@
+/* swaync is GTK4 and paints with custom properties, not @define-color: the stock
+   stylesheet uses rgba(var(--noti-bg), var(--noti-bg-alpha)), so --noti-bg is
+   comma-separated RGB and alpha is separate. Opaque black, to match the bar. */
+:root {{
+  --noti-bg: 0, 0, 0;
+  --noti-bg-alpha: 1.0;
+  --noti-bg-darker: rgb(20, 20, 20);
+  --noti-border-radius: 0px;
+}}
+
 @define-color cc-bg transparent;
-@define-color noti-bg alpha(@color0, 0.85);
-@define-color noti-bg-opaque {color0};
+@define-color noti-bg #000000;
+@define-color noti-bg-opaque #000000;
 @define-color noti-bg-darker {color8};
 @define-color noti-bg-hover {color1};
 @define-color noti-bg-hover-opaque {color1};
@@ -12,7 +22,7 @@
 @define-color noti-border-color alpha(@color15, 0.18);
 @define-color bg-selected {color4};
 
-@define-color nb-bg0 {color0};
+@define-color nb-bg0 #000000;
 @define-color nb-bg1 {color8};
 @define-color nb-bg2 {color1};
 @define-color nb-bg3 {color2};

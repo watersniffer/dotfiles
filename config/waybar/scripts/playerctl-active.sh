@@ -11,8 +11,6 @@ while read -r PLAYER; do
     fi
 done < <(playerctl -l 2>/dev/null)
 
-# Nothing is playing.
-# Use the last player we knew about.
 if [[ -f "$STATE_FILE" ]]; then
     PLAYER="$(cat "$STATE_FILE")"
 

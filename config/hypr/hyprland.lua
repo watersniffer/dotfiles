@@ -1,7 +1,3 @@
-------------------
----- MONITORS ----
-------------------
-
 hl.monitor({
 	output = "",
 	mode = "preferred",
@@ -9,67 +5,21 @@ hl.monitor({
 	scale = "auto",
 })
 
----------------------
----- MY PROGRAMS ----
----------------------
-
 -- Set programs that you use
 local home = os.getenv("HOME") or "/home/water"
-local terminal = "kitty"
-local fileManager = "nemo"
+local terminal = "alacritty"
+local fileManager = "thunar"
 local menu = "hyprlauncher"
 
--------------------
----- AUTOSTART ----
--------------------
-
--- at_startup holds a flock and only runs executable *.sh files in
--- ~/.local/bin/startup, so this one call cannot stack duplicates across reloads.
 hl.on("hyprland.start", function()
 	hl.exec_cmd(home .. "/.local/bin/at_startup")
 end)
 
--------------------------------
----- ENVIRONMENT VARIABLES ----
--------------------------------
-
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("SHELL", "/usr/bin/zsh")
 
------------------------
------ PERMISSIONS -----
------------------------
-
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Permissions/
--- Please note permission changes here require a Hyprland restart and are not applied on-the-fly
--- for security reasons
-
--- hl.config({
---   ecosystem = {
---     enforce_permissions = true,
---   },
--- })
-
--- hl.permission("/usr/(bin|local/bin)/grim", "screencopy", "allow")
--- hl.permission("/usr/(lib|libexec|lib64)/xdg-desktop-portal-hyprland", "screencopy", "allow")
--- hl.permission("/usr/(bin|local/bin)/hyprpm", "plugin", "allow")
-
------------------------
----- LOOK AND FEEL ----
------------------------
-
--- Theme colours, generated into theme.lua by the theme switcher. Do not edit that file
--- by hand.
---
--- dofile() rather than an hl.* call because a Hyprland .conf has `source =` for pulling in
--- another config and this config is Lua, which has no equivalent. Hyprland embeds a full
--- Lua state, so plain dofile() works.
---
--- The pcall matters: dofile() raises if the file is missing, and a Hyprland config that
--- will not load is a far worse outcome than hardcoded greys. A missing or malformed
--- theme.lua degrades to the fallback below rather than leaving the session with no
--- compositor. `hyprctl reload` re-executes this file, so a theme change recolours the
--- borders live.
+-- Theme colours, generated into theme.lua by the theme switcher.
 local theme = {
 	name = "gruvbox",
 	label = "Gruvbox Dark",
@@ -90,12 +40,8 @@ hl.config({
 		gaps_in = 5,
 		gaps_out = 5,
 
-		border_size = 1,
+		border_size = 0,
 
-		-- Borders follow the theme, and are tuned to sit a couple of steps up
-		-- the background ramp so the active window reads as a soft outline
-		-- rather than a hard frame. On gruvbox that is #7c6f64 active and
-		-- #665c54 inactive; the bar's islands are drawn from the same palette.
 		col = {
 			active_border = theme.active_border,
 			inactive_border = theme.inactive_border,
@@ -111,23 +57,23 @@ hl.config({
 	},
 
 	decoration = {
-		rounding = 5,
+		rounding = 10,
 		rounding_power = 2,
 
 		-- Change transparency of focused and unfocused windows
-		active_opacity = 0.90,
-		inactive_opacity = 0.90,
+		active_opacity = 1.0,
+		inactive_opacity = 1.0,
 
 		shadow = {
 			enabled = true,
 			range = 4,
 			render_power = 3,
-			color = theme.shadow_color,
+			color = "0x000000ff",
 		},
 
 		blur = {
-			enabled = false,
-			size = 3,
+			enabled = true,
+			size = 2,
 			passes = 1,
 			vibrancy = 0.1696,
 		},
@@ -157,66 +103,19 @@ hl.animation({ leaf = "fadeIn", enabled = true, speed = 0.25, bezier = "quick" }
 hl.animation({ leaf = "fadeOut", enabled = true, speed = 0.2, bezier = "quick" })
 hl.animation({ leaf = "fade", enabled = true, speed = 0.6, bezier = "quick" })
 
--- Layer-surface animations OFF. layersIn was style = "slide", so the bar visibly slid
--- down into place on every start. The only layer surfaces here are the bar, the nwg-dock
--- and its hotspot, and the wallpaper daemon; none of them should animate. If one ever
--- needs to, scope it with a `match:` rule rather than re-enabling the global leaf --
--- that is what drags the bar back in.
 hl.animation({ leaf = "layers", enabled = false })
 hl.animation({ leaf = "layersIn", enabled = false })
 hl.animation({ leaf = "layersOut", enabled = false })
 hl.animation({ leaf = "fadeLayersIn", enabled = false })
 hl.animation({ leaf = "fadeLayersOut", enabled = false })
--- The original workspace slide. These animate the workspace-switcher overlay and the
--- background, not the bar (that is a layer surface, disabled above).
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "bounce", style = "slide" })
 hl.animation({ leaf = "workspacesIn", enabled = true, speed = 4, bezier = "bounce", style = "slide" })
 hl.animation({ leaf = "workspacesOut", enabled = true, speed = 3, bezier = "quick", style = "slide" })
 
 hl.animation({ leaf = "zoomFactor", enabled = true, speed = 6, bezier = "quick" })
 
--- Special workspaces: three of them, and all three are opened by a bind --
--- Planify on Super+R, Dank Calendar on Super+D, and the scratchpad on Super+S.
--- The slide animation is the one that makes a special workspace read as coming in
--- over the desktop rather than the desktop cutting to it.
 hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 2.5, bezier = "bounce", style = "slidevert" })
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2.5, bezier = "quick", style = "slidevert" })
-
--- Workspaces are NOT persistent, on purpose.
---
--- Waybar's hyprland/workspaces module draws the workspaces Hyprland *reports*, and
--- Hyprland drops a workspace when you leave it unless a workspace_rule marks it
--- persistent. Without these the bar grows and shrinks with what is actually in use:
--- SUPER+5 creates workspace 5 and it appears, leaving it destroys it and the button
--- goes away. Pinning 1-10 instead just means a permanently full row of dead buttons.
---
--- The SUPER+1..0 binds below still work either way -- they create the workspace on
--- demand.
---
--- If you would rather have all ten always available, put this back:
---   for ws = 1, 10 do
---     hl.workspace_rule({ workspace = tostring(ws), persistent = true })
---   end
--- Ten separate rules rather than workspace = "1..10": Hyprland's own config language
--- expands that range, hl.workspace_rule does not.
-
--- Ref https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
--- "Smart gaps" / "No gaps when only"
--- uncomment all if you wish to use that.
--- hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
--- hl.workspace_rule({ workspace = "f[1]",   gaps_out = 0, gaps_in = 0 })
--- hl.window_rule({
---     name  = "no-gaps-wtv1",
---     match = { float = false, workspace = "w[tv1]" },
---     border_size = 0,
---     rounding    = 0,
--- })
--- hl.window_rule({
---     name  = "no-gaps-f1",
---     match = { float = false, workspace = "f[1]" },
---     border_size = 0,
---     rounding    = 0,
--- })
 
 -- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/ for more
 hl.config({
@@ -239,26 +138,15 @@ hl.config({
 	},
 })
 
-----------------
-----  MISC  ----
-----------------
-
 hl.config({
 	misc = {
 		force_default_wallpaper = -1, -- Set to 0 or 1 to disable the anime mascot wallpapers
 		disable_hyprland_logo = false, -- If true disables the random hyprland logo / anime girl background. :(
 
-		-- The splash/error overlay is drawn with this font. Left empty it draws
-		-- one solid rectangle per glyph instead of text, which makes a config
-		-- error unreadable exactly when you need to read it. Any installed font
-		-- with real coverage works; this one is already on the system.
-		splash_font_family = "JetBrainsMono Nerd Font",
+		-- error unreadable exactly when you need to read it.
+		splash_font_family = "Open Sans",
 	},
 })
-
----------------
----- INPUT ----
----------------
 
 hl.config({
 	input = {
@@ -287,28 +175,24 @@ hl.gesture({
 	action = "workspace",
 })
 
--- Example per-device config
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Devices/ for more
 hl.device({
 	name = "epic-mouse-v1",
 	sensitivity = -0.5,
 })
 
----------------------
----- KEYBINDINGS ----
----------------------
-
-hl.env("PATH", home .. "/.local/bin:" .. (os.getenv("PATH") or ""))
+-- Guarded: this runs on every reload, so an unconditional prepend would add
+-- one copy of ~/.local/bin per reload.
+local _bin = home .. "/.local/bin"
+local _path = os.getenv("PATH") or ""
+if _path:sub(1, #_bin) ~= _bin then
+	hl.env("PATH", _bin .. ":" .. _path)
+end
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_STYLE_OVERRIDE", "kvantum")
 hl.env("QT_SCALE_FACTOR", "0.92")
 hl.env("EDITOR", "nvim")
 hl.env("VISUAL", "nvim")
-hl.env("TERMINAL", "kitty")
-
-------------------------
----- KEYBINDINGS --------
-------------------------
+hl.env("TERMINAL", "alacritty")
 
 local mainMod = "SUPER" -- the stock declaration lived in the block replaced above
 
@@ -318,74 +202,27 @@ local stepH = 76
 -- --- launchers; the app launcher is Super+Space, as in niri ---
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd("nemo"))
-hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("kitty --class yazi -e yazi"))
+hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
+hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
+
+-- The Spotify web app, installed as a Firefox PWA.
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("firefoxpwa site launch 01M4GK4HT0HCJEQ4EKX0Z96M0V"))
+
 hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(home .. "/.local/bin/theme-from-wallpaper"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
 
--- Super+N opens the video/gif picker for the files in
--- ~/Pictures/Wallpapers/Animated, played as a looping wallpaper by mpvpaper.
--- Separate from Super+W above because that one is the Matuwall picker for stills
--- and works through awww, which cannot play video.
---
--- Super+Shift+N is the same script with --toggle-sound: no picker, it flips the
--- wallpaper's sound and restarts mpvpaper so the change is audible at once. A
--- restart rather than a live mute because the silent launch passes no-audio=yes,
--- which means mpv never opened an audio output for one to control. The choice is
--- stored in ~/.local/state/animated-wallpaper/sound, so it survives restarts and
--- is remembered by later picks; the picker shows the current state on its
--- message line.
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper --toggle-sound"))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/toggle-waybar"))
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 
--- Super+R shows/hides Planify's special workspace. The window is hidden, not
--- closed, so it keeps running and reappears instantly. This was Super+P until it
--- was moved here to free P up.
---
--- The argument is a POSITIONAL string, not a table: toggle_special("planify").
--- The table form { name = "planify" } is accepted silently and does nothing at
--- all, which is what made this look broken. Hyprland's own default config
--- (/usr/share/hypr/hyprland.lua) uses the positional form for the same reason.
 hl.bind(mainMod .. " + R", hl.dsp.workspace.toggle_special("planify"))
 
--- Super+D shows/hides Dank Calendar's special workspace, the same way Super+R
--- does for Planify. Positional string argument, not a table -- see the note on
--- the Planify bind above.
 hl.bind(mainMod .. " + D", hl.dsp.workspace.toggle_special("dank"))
 
--- Super+S is a scratch special workspace, and unlike Planify and Dank it is not
--- tied to any one app: it holds whatever is sent to it. Super+S shows or hides it,
--- Super+Shift+S stows the focused window into it.
---
--- Both binds are Hyprland's own stock scratchpad pair, with "magic" renamed to
--- "scratch" (/usr/share/hypr/hyprland.lua, lines 282-283). The name is arbitrary
--- but it has to stay in step between the toggle and the move, so it is written out
--- in both rather than built from a shared local -- the config has no locals for
--- this and inventing one for two uses is not worth it.
---
--- NO `silent` OPTION, deliberately. There is a `movetoworkspacesilent` dispatcher
--- in the binary, and the obvious thought is that the move needs it so the screen
--- does not follow the window into the scratchpad. It does not: moving a window to
--- a SPECIAL workspace never switches to it, which is why the stock config above
--- gets away without it. Measured -- active workspace was 1 before and after the
--- move. The lua binding has no `silent` key anyway, and an unrecognised key in a
--- dispatcher table is ignored without complaint, so writing one would have looked
--- deliberate while doing nothing.
---
--- Positioned string argument, for the reason on the Planify bind above: the table
--- form is accepted silently and does nothing.
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratch" }))
-
--- Super+T re-derives the theme from the wallpaper already on screen. There is no
--- theme picker any more: the wallpaper is the theme, and pywal generates the
--- palette from it. theme-from-wallpaper runs pywal then `hyprctl reload
--- config-only`, which re-reads this file and picks up the new border colours
--- without touching monitors. The bind must NOT also reload, or the two race and the
--- borders come from the previous palette.
 
 -- --- window management ---
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
@@ -405,12 +242,6 @@ hl.bind(mainMod .. " + CTRL + right", hl.dsp.window.move({ direction = "right" }
 hl.bind(mainMod .. " + CTRL + up", hl.dsp.window.move({ direction = "up" }))
 hl.bind(mainMod .. " + CTRL + down", hl.dsp.window.move({ direction = "down" }))
 
--- --- resize, as niri's Mod+Shift+Arrow. Niri resizes by percentage;
--- hl.dsp.window.resize takes pixels in x/y instead. ---
---
--- relative = true is REQUIRED. Without it x/y are the ABSOLUTE target size and both
--- must be >= 1, so a delta like { x = -136, y = 0 } is rejected with "Invalid size".
--- Each of these four binds zeroes one axis, so all four trip that check.
 hl.bind(mainMod .. " + SHIFT + left", hl.dsp.window.resize({ x = -stepW, y = 0, relative = true }))
 hl.bind(mainMod .. " + SHIFT + right", hl.dsp.window.resize({ x = stepW, y = 0, relative = true }))
 hl.bind(mainMod .. " + SHIFT + up", hl.dsp.window.resize({ x = 0, y = -stepH, relative = true }))
@@ -457,14 +288,7 @@ hl.bind("XF86AudioStop", hl.dsp.exec_cmd("playerctl stop"), { locked = true })
 hl.bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("brightness-step up"), { repeating = true })
 hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightness-step down"), { repeating = true })
 
--- power-mode sits on Super+Shift+P. It used to hold Super+P, back when that was
--- Planify's key; Planify has since moved to Super+R, so plain Super+P is free
--- again and this could go back to it if you prefer.
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(home .. "/.local/bin/power-mode"))
-
-------------------------
----- AUTOSTART ---------
-------------------------
 
 hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
@@ -484,13 +308,10 @@ hl.on("hyprland.start", function()
 	-- Session services.
 	hl.exec_cmd("nm-applet")
 	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
-	hl.exec_cmd("kitty")
+	hl.exec_cmd("alacritty")
 
 	hl.exec_cmd("hypridle")
 end)
-
----- WINDOWS AND WORKSPACES ----
---------------------------------
 
 local suppressMaximizeRule = hl.window_rule({
 	-- Ignore maximize requests from all apps. You'll probably like this.
@@ -516,14 +337,6 @@ hl.window_rule({
 	no_focus = true,
 })
 
--- Layer rules also return a handle.
--- local overlayLayerRule = hl.layer_rule({
---     name  = "no-anim-overlay",
---     match = { namespace = "^my-overlay$" },
---     no_anim = true,
--- })
--- overlayLayerRule:set_enabled(false)
-
 -- Hyprland-run windowrule
 hl.window_rule({
 	name = "move-hyprland-run",
@@ -533,15 +346,6 @@ hl.window_rule({
 	float = true,
 })
 
--- Planify lives on its own special workspace, so it never occupies a numbered
--- workspace and is hidden rather than closed when toggled away. Hiding is what
--- makes the toggle feel instant: the window is still mapped, so showing it again
--- does not rebuild it.
---
--- This is a separate rule from planify-floating below rather than another `move`
--- in the same one, because a Lua table cannot hold two `move` keys -- the second
--- would silently replace the first. Rules apply in definition order, so the window
--- is put on special:planify first and given its geometry there afterwards.
 hl.window_rule({
 	name = "planify-special-workspace",
 	match = { class = "^(io.github.alainm23.planify)$" },
@@ -549,10 +353,6 @@ hl.window_rule({
 	workspace = "special:planify",
 })
 
--- Planify opens floating at a fixed size and position. All three matter, not just float:
--- Planify restores its own geometry from gsettings on launch, so without size/move it
--- comes back at whatever it last saved. float comes first because size and move are
--- applied in listed order and only stick once the window is already floating.
 hl.window_rule({
 	name = "planify-floating",
 	match = { class = "^(io.github.alainm23.planify)$" },
@@ -562,9 +362,6 @@ hl.window_rule({
 	move = "276 44",
 })
 
--- Dank Calendar gets its own special workspace, opened and hidden with Super+D.
--- It tiles rather than floating, so unlike Planify above it needs no second rule
--- for geometry.
 hl.window_rule({
 	name = "dankcalendar-special-workspace",
 	match = { class = "^com[.]danklinux[.]dankcalendar$" },
@@ -575,10 +372,52 @@ hl.window_rule({
 -- No float/size/move rule for Dank Calendar: it tiles like any other window.
 
 hl.window_rule({
-	name = "kitty-no-blur",
-	match = { class = "^(kitty|kitty-wayland)$" },
-	no_blur = true,
+	name = "terminal-no-shadow",
+	match = { class = "^Alacritty$" },
 	no_shadow = true,
 })
--- No `hl.config({ plugin = ... })` block: there is no overview plugin installed, and a
--- config block for an absent plugin is a config error.
+
+---------------------------
+---- HYPRGLASS PLUGIN ----
+---------------------------
+
+-- https://github.com/hyprnux/hyprglass
+--
+-- The effect is on globally by default and covers every window, Alacritty
+-- included. This block only tunes it: a dark theme against the black desktop,
+-- and the Waybar layer so the bar gets glass too.
+--
+-- hl.plugin is nil when the plugin is not loaded, which is why this is guarded:
+-- a config block for an absent plugin is a config error and would blank the
+-- whole compositor.
+if hl.plugin.hyprglass then
+	local hg = hl.plugin.hyprglass
+
+	hg.config({
+		default_theme = "dark",
+		default_preset = "clear",
+
+		brightness = 0.85,
+		contrast = 1.1,
+		saturation = 1.0,
+		tint_color = 0x00000000,
+		dark = { brightness = 0.8 },
+
+		-- A terminal paints its own fill over the glass, so at the default skip
+		-- you only get the fill plus Hyprland's blur, with no refraction.
+		skip_opaque_windows = false,
+		self_sample = 0.55,
+
+		layers = { enabled = true },
+	})
+
+	hg.layer("waybar", { preset = "subtle" })
+	hg.layer("swaync")
+end
+
+-- pomme's lensing is edge-only, so the text in the middle is left alone.
+hl.window_rule({
+	name = "alacritty-glass",
+	match = { class = "^Alacritty$" },
+	tag = "+hyprglass_preset_pomme",
+})

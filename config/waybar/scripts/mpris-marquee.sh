@@ -58,8 +58,6 @@ while true; do
 
     else
 
-        # Nothing is currently playing.
-        # If we have a previously detected player, check its state.
         if [[ -n "$last_player" ]]; then
 
             STATUS=$(playerctl --player="$last_player" status 2>/dev/null)
