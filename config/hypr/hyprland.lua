@@ -215,13 +215,45 @@ hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpap
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper --toggle-sound"))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/toggle-waybar"))
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
-
-hl.bind(mainMod .. " + R", hl.dsp.workspace.toggle_special("planify"))
-
-hl.bind(mainMod .. " + D", hl.dsp.workspace.toggle_special("dank"))
-
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratch" }))
+
+-- https://github.com/samine825/Hypr3D
+--
+-- hl.plugin is nil when the plugin is not loaded, so this has to be guarded: a
+-- config block referencing an absent plugin is a config error.
+if hl.plugin.hypr3d then
+	local hypr3d = hl.plugin.hypr3d
+
+	hl.bind("SUPER + P", hypr3d.toggle)
+
+	hypr3d.config({
+		world = {
+			grid = true,
+		},
+		windows = {
+			window_scale = 0.25,
+			spawn_distance = 2,
+		},
+		player = {
+			flying = true,
+			spawn = { 0, 2, 0 },
+			move_speed = 3.0,
+		},
+		scene = {
+			-- Khronos glTF sample model, a walkable building interior.
+			duplex = {
+				mesh = {
+					path = home .. "/Downloads/duplex/source/Duplex.glb",
+					flat = true,
+					center = "origin",
+				},
+				collision = true,
+				static = true,
+			},
+		},
+	})
+end
 
 -- --- window management ---
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
