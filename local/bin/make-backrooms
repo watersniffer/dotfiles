@@ -128,22 +128,43 @@ begin_prim(3)
 box(-1.2, CEIL - 0.06, B0 + 1.2, 1.2, CEIL, B1 - 1.2)   # chamber 2 light
 end_prim()
 
+# --------------------------------------------------------- white texture --
+# hypr3d's shader always does `baseColor * texture(uTex, uv)`. With no base
+# image the loader binds texture handle 0 (MapModel.cpp:678), an unbound
+# sampler, which samples black -- so an untextured model renders black no
+# matter how it is lit. A 1x1 opaque white PNG makes that sample 1.0 so
+# baseColorFactor comes through.
+def white_png(size=1):
+    """Minimal RGBA PNG, all pixels opaque white."""
+    import zlib
+
+    def chunk(tag, data):
+        return (struct.pack(">I", len(data)) + tag + data
+                + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF))
+
+    ihdr = struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0)
+    raw = b"".join(b"\x00" + b"\xff\xff\xff\xff" * size for _ in range(size))
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
 # ------------------------------------------------------------ glTF packing --
 
+BASE_TEX = {"index": 0}   # the 1x1 white PNG embedded below
+
+def mat(rgb, rough, emissive=None):
+    m = {"pbrMetallicRoughness": {"baseColorTexture": BASE_TEX,
+                                 "baseColorFactor": rgb + [1.0],
+                                 "metallicFactor": 0.0, "roughnessFactor": rough}}
+    if emissive:
+        m["emissiveTexture"] = BASE_TEX
+        m["emissiveFactor"] = emissive
+    return m
+
 MATERIALS = [
-    # carpet: dull, damp-looking beige
-    {"pbrMetallicRoughness": {"baseColorFactor": [0.42, 0.36, 0.26, 1.0],
-                              "metallicFactor": 0.0, "roughnessFactor": 0.95}},
-    # wall: the sickly yellow
-    {"pbrMetallicRoughness": {"baseColorFactor": [0.72, 0.66, 0.34, 1.0],
-                              "metallicFactor": 0.0, "roughnessFactor": 0.90}},
-    # ceiling: flat off-white
-    {"pbrMetallicRoughness": {"baseColorFactor": [0.78, 0.76, 0.70, 1.0],
-                              "metallicFactor": 0.0, "roughnessFactor": 0.95}},
-    # light panel: emissive, this is what glows
-    {"pbrMetallicRoughness": {"baseColorFactor": [1.0, 0.98, 0.90, 1.0],
-                              "metallicFactor": 0.0, "roughnessFactor": 0.40},
-     "emissiveFactor": [1.0, 0.97, 0.86]},
+    mat([0.42, 0.36, 0.26], 0.95),                      # carpet
+    mat([0.72, 0.66, 0.34], 0.90),                      # sickly yellow wall
+    mat([0.78, 0.76, 0.70], 0.95),                      # ceiling
+    mat([1.00, 0.98, 0.90], 0.40, [1.0, 0.97, 0.86]),  # fluorescent panel
 ]
 
 buf = bytearray()
@@ -202,12 +223,26 @@ gltf = {
     "accessors": accessors,
     "bufferViews": views,
     "buffers": [{"byteLength": len(buf)}],
+    "images": [{"bufferView": -1, "mimeType": "image/png"}],
+    "textures": [{"source": 0}],
+    "samplers": [{"magFilter": 9729, "minFilter": 9729,
+                  "wrapS": 33071, "wrapT": 33071}],
 }
 
 # ------------------------------------------------------------------- write --
 
+# The PNG lives inside the same buffer as the vertex data, which glTF allows,
+# so the file stays a single BIN chunk and there is no chunk alignment to get
+# wrong.
+png = white_png()
 while len(buf) % 4:
     buf.append(0)
+png_offset = len(buf)
+buf.extend(png)
+gltf["bufferViews"].append({"buffer": 0, "byteOffset": png_offset,
+                            "byteLength": len(png)})
+gltf["images"][0]["bufferView"] = len(gltf["bufferViews"]) - 1
+gltf["buffers"][0]["byteLength"] = len(buf)
 json_bytes = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
 while len(json_bytes) % 4:
     json_bytes += b" "
