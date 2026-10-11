@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""
+Generate a backrooms-style room as a glTF 2.0 binary (.glb).
+
+Written rather than downloaded so the result is unambiguously free, is valid
+glTF that hypr3D can load, and has known geometry so the player spawn point can
+be placed inside it.
+
+Layout: a 12 x 9 m hall running along +X, 2.9 m ceiling, with a doorway in the
++Z wall, a step-down alcove, damp carpet, sickly yellow walls and fluorescent
+ceiling panels.
+
+No dependencies beyond the standard library.
+"""
+
+import json
+import struct
+import sys
+
+# ---------------------------------------------------------------- geometry --
+
+VERTS = []      # flat list of (x, y, z, nx, ny, nz, u, v)
+INDICES = []    # flat list of vertex indices, per-primitive
+
+
+def quad(p0, p1, p2, p3, normal):
+    """Add a quad as two triangles, with its own four vertices."""
+    base = len(VERTS) // 8
+    for (x, y, z), (u, v) in zip((p0, p1, p2, p3), ((0, 0), (1, 0), (1, 1), (0, 1))):
+        VERTS.extend((x, y, z, *normal, u, v))
+    INDICES.extend((base, base + 1, base + 2, base, base + 2, base + 3))
+
+
+def box(x0, y0, z0, x1, y1, z1):
+    """Axis-aligned box, six quads with outward normals."""
+    quad((x0, y0, z1), (x1, y0, z1), (x1, y1, z1), (x0, y1, z1), (0, 0, 1))   # +Z
+    quad((x1, y0, z0), (x0, y0, z0), (x0, y1, z0), (x1, y1, z0), (0, 0, -1))  # -Z
+    quad((x1, y0, z1), (x1, y0, z0), (x1, y1, z0), (x1, y1, z1), (1, 0, 0))   # +X
+    quad((x0, y0, z0), (x0, y0, z1), (x0, y1, z1), (x0, y1, z0), (-1, 0, 0))  # -X
+    quad((x0, y1, z1), (x1, y1, z1), (x1, y1, z0), (x0, y1, z0), (0, 1, 0))   # +Y
+    quad((x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1), (0, -1, 0))  # -Y
+
+
+def wall_with_door(axis, at, a0, a1, y0, y1, d0, d1, height=2.1):
+    """Wall along one axis with a doorway between d0 and d1.
+
+    axis 'z' builds a wall in the XY plane at z=at; 'x' builds it at x=at.
+    """
+    def seg(s0, s1, yy0, yy1):
+        if axis == "z":
+            box(s0, yy0, at - 0.1, s1, yy1, at + 0.1)
+        else:
+            box(at - 0.1, yy0, s0, at + 0.1, yy1, s1)
+
+    seg(a0, d0, y0, y1)
+    seg(d1, a1, y0, y1)
+    seg(d0, d1, y0 + height, y1)   # lintel above the opening
+
+
+# Room dimensions. Kept in one place so the spawn can be derived from them.
+X0, X1 = -6.0, 6.0
+Z0, Z1 = -4.5, 4.5
+CEIL = 2.9
+DOOR_X0, DOOR_X1 = -0.9, 0.9
+
+prim_materials = []   # (first_index, index_count, material_slot)
+
+
+def begin_prim(mat):
+    prim_materials.append((len(INDICES), 0, mat))
+
+
+def end_prim():
+    i, c, m = prim_materials[-1]
+    prim_materials[-1] = (i, len(INDICES) - i, m)
+
+
+# 0 carpet, 1 yellow wall, 2 ceiling, 3 emissive light panel
+begin_prim(0)
+box(X0, -0.1, Z0, X1, 0.0, Z1)          # floor slab
+end_prim()
+
+begin_prim(1)
+box(X0, 0.0, Z1, X1, CEIL, Z1 + 0.2)    # +Z wall, solid
+box(X0, 0.0, Z0 - 0.2, X1, CEIL, Z0)    # -Z wall, solid
+box(X0 - 0.2, 0.0, Z0, X0, CEIL, Z1)    # -X end wall
+box(X1, 0.0, Z0, X1 + 0.2, CEIL, Z1)    # +X end wall
+wall_with_door("z", Z1 - 0.2, X0, X1, 0.0, CEIL, DOOR_X0, DOOR_X1)
+end_prim()
+
+begin_prim(2)
+box(X0, CEIL, Z0, X1, CEIL + 0.2, Z1)  # ceiling slab
+end_prim()
+
+# Two fluorescent panels, drawn as thin emissive boxes just under the ceiling.
+begin_prim(3)
+box(-3.6, CEIL - 0.06, -0.9, -0.4, CEIL, 0.9)
+box(1.2, CEIL - 0.06, -0.9, 4.4, CEIL, 0.9)
+end_prim()
+
+# A pillar block in the far corner, so the room is not a bare box.
+begin_prim(1)
+box(X1 - 1.8, 0.0, Z1 - 1.8, X1 - 0.6, CEIL, Z1 - 0.6)
+end_prim()
+
+# Second chamber behind the doorway. Without it the opening in the +Z wall looks
+# out onto nothing, which reads as broken geometry rather than a doorway.
+A0, A1 = -3.0, 3.0          # chamber 2 extent in X
+B0, B1 = Z1 + 0.2, Z1 + 5.0  # chamber 2 extent in Z
+
+begin_prim(0)
+box(A0, -0.1, B0, A1, 0.0, B1)        # chamber 2 floor
+end_prim()
+
+begin_prim(2)
+box(A0, CEIL, B0, A1, CEIL + 0.2, B1)  # chamber 2 ceiling
+end_prim()
+
+begin_prim(1)
+box(A0, 0.0, B1 - 0.2, A1, CEIL, B1)   # chamber 2 far wall
+box(A0 - 0.2, 0.0, B0, A0, CEIL, B1)   # chamber 2 -X wall
+box(A1, 0.0, B0, A1 + 0.2, CEIL, B1)   # chamber 2 +X wall
+# The wall carrying the doorway, with a matching opening.
+wall_with_door("z", B0, A0, A1, 0.0, CEIL, DOOR_X0, DOOR_X1)
+end_prim()
+
+begin_prim(3)
+box(-1.2, CEIL - 0.06, B0 + 1.2, 1.2, CEIL, B1 - 1.2)   # chamber 2 light
+end_prim()
+
+# ------------------------------------------------------------ glTF packing --
+
+MATERIALS = [
+    # carpet: dull, damp-looking beige
+    {"pbrMetallicRoughness": {"baseColorFactor": [0.42, 0.36, 0.26, 1.0],
+                              "metallicFactor": 0.0, "roughnessFactor": 0.95}},
+    # wall: the sickly yellow
+    {"pbrMetallicRoughness": {"baseColorFactor": [0.72, 0.66, 0.34, 1.0],
+                              "metallicFactor": 0.0, "roughnessFactor": 0.90}},
+    # ceiling: flat off-white
+    {"pbrMetallicRoughness": {"baseColorFactor": [0.78, 0.76, 0.70, 1.0],
+                              "metallicFactor": 0.0, "roughnessFactor": 0.95}},
+    # light panel: emissive, this is what glows
+    {"pbrMetallicRoughness": {"baseColorFactor": [1.0, 0.98, 0.90, 1.0],
+                              "metallicFactor": 0.0, "roughnessFactor": 0.40},
+     "emissiveFactor": [1.0, 0.97, 0.86]},
+]
+
+buf = bytearray()
+views = []
+
+
+
+accessors = []
+
+
+def accessor(data_flat, ncomp, ctype, atype, target, bounds=False):
+    while len(buf) % 4:
+        buf.append(0)
+    off = len(buf)
+    size = {5126: 4, 5125: 4, 5123: 2}[ctype]
+    fmt = {5126: "f", 5125: "I", 5123: "H"}[ctype]
+    buf.extend(struct.pack("<%d%s" % (len(data_flat), fmt), *data_flat))
+    views.append({"buffer": 0, "byteOffset": off,
+                  "byteLength": len(data_flat) * size, "target": target})
+    a = {"bufferView": len(views) - 1, "componentType": ctype,
+         "count": len(data_flat) // ncomp, "type": atype}
+    if bounds:
+        n = ncomp
+        cols = [data_flat[i::n] for i in range(n)]
+        a["min"] = [min(c) for c in cols]
+        a["max"] = [max(c) for c in cols]
+    accessors.append(a)
+    return len(accessors) - 1
+
+
+pos = [v for i, v in enumerate(VERTS) if i % 8 in (0, 1, 2)]
+nrm = [v for i, v in enumerate(VERTS) if i % 8 in (3, 4, 5)]
+uvs = [v for i, v in enumerate(VERTS) if i % 8 in (6, 7)]
+
+a_pos = accessor(pos, 3, 5126, "VEC3", 34962, bounds=True)
+a_nrm = accessor(nrm, 3, 5126, "VEC3", 34962)
+a_uv = accessor(uvs, 2, 5126, "VEC2", 34962)
+
+primitives = []
+for first, count, mat in prim_materials:
+    idx = list(INDICES[first:first + count])
+    a_idx = accessor(idx, 1, 5125, "SCALAR", 34963)
+    primitives.append({
+        "attributes": {"POSITION": a_pos, "NORMAL": a_nrm, "TEXCOORD_0": a_uv},
+        "indices": a_idx,
+        "material": mat,
+    })
+
+gltf = {
+    "asset": {"version": "2.0", "generator": "hypr3d-backrooms-generator"},
+    "scene": 0,
+    "scenes": [{"nodes": [0]}],
+    "nodes": [{"mesh": 0, "name": "backrooms"}],
+    "meshes": [{"primitives": primitives, "name": "backrooms"}],
+    "materials": MATERIALS,
+    "accessors": accessors,
+    "bufferViews": views,
+    "buffers": [{"byteLength": len(buf)}],
+}
+
+# ------------------------------------------------------------------- write --
+
+while len(buf) % 4:
+    buf.append(0)
+json_bytes = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
+while len(json_bytes) % 4:
+    json_bytes += b" "
+
+total = 12 + 8 + len(json_bytes) + 8 + len(buf)
+out = struct.pack("<III", 0x46546C67, 2, total)
+out += struct.pack("<II", len(json_bytes), 0x4E4F534A) + json_bytes
+out += struct.pack("<II", len(buf), 0x004E4942) + bytes(buf)
+
+path = sys.argv[1] if len(sys.argv) > 1 else "backrooms.glb"
+with open(path, "wb") as f:
+    f.write(out)
+
+print(f"wrote {path}  ({len(out)} bytes, {len(primitives)} primitives, "
+      f"{len(VERTS)//8} vertices)")
+print(f"  room X {X0}..{X1}  Z {Z0}..{Z1}  ceiling {CEIL}")
+print(f"  spawn suggestion: (0, 1.6, 0) -- centre of the floor")
