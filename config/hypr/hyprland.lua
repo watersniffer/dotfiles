@@ -236,10 +236,11 @@ if hl.plugin.hypr3d then
 			spawn_distance = 2,
 		},
 		player = {
-			-- Floor spans X -6..6 and Z -4.5..4.5 with the ceiling at 2.9, so
-			-- (0, 1.6, 0) is standing in the middle of the first room rather
-			-- than on top of the default grid.
-			spawn = { 0, 1.6, 0 },
+			-- spawn is the FEET, and the eyes ride kEyeHeight (1.62) above it,
+			-- so y must be the floor at 0 or the camera ends up above the
+			-- 2.9m ceiling. x is off-centre on purpose: hypr3d derives the yaw
+			-- from atan2(-x, z), so -4.5 here faces the length of the hall.
+			spawn = { -4.5, 0, 0 },
 			flying = true,
 			move_speed = 3.0,
 			collision = true,
