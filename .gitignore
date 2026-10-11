@@ -14,3 +14,6 @@ config/WhatsApp Desktop/
 config/Mailspring/
 config/FreeTube/
 config/VacuumTube/
+
+# 3D models the user downloaded, not ours to redistribute.
+local/share/hypr3d/models/
