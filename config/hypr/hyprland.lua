@@ -250,7 +250,10 @@ if hl.plugin.hypr3d then
 			backrooms = {
 				mesh = {
 					path = home .. "/.local/share/hypr3d/backrooms.glb",
-					flat = true,
+					-- Not flat: flat = true means raw texture with no headlight
+					-- shading, and the generated model carries no textures, so
+					-- it sampled nothing and rendered black.
+					flat = false,
 					center = "origin",
 				},
 				collision = true,
