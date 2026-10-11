@@ -245,13 +245,46 @@ if hl.plugin.hypr3d then
 			collision = true,
 		},
 		scene = {
+			-- Positions come from each model's own bounds: feet are at the
+			-- accessor min-Y, so every lift below is that value scaled.
+
+			-- Downloaded model. 1.899 m, centred, feet at y = -0.95.
 			warrior = {
 				mesh = {
 					path = home .. "/.local/share/hypr3d/models/warrior/source/model.glb",
-					-- Model is 1.899 m tall and centred, so its feet sit at
-					-- y = -0.95. Lifting by 0.95 puts them on the floor.
+					transform = { position = { 0, 0.95, 0 } },
+					flat = false,
+				},
+				collision = true,
+				static = true,
+			},
+
+			-- CesiumMan, Khronos sample, CC-BY-4.0. Rigged human, 1.138 m
+			-- with feet at y = -0.569; scaled 1.5x that lift is 0.854.
+			cesiumman = {
+				mesh = {
+					path = home .. "/.local/share/hypr3d/models/khronos/CesiumMan.glb",
 					transform = {
-						position = { 0, 0.95, 0 },
+						position = { 0, 0.854, -3 },
+						rotation = { 0, 180, 0 },
+						scale = { 1.5, 1.5, 1.5 },
+					},
+					flat = false,
+				},
+				collision = true,
+				static = true,
+			},
+
+			-- Fox, Khronos sample, CC0-1.0, so no attribution is owed.
+			-- Modelled 79 m tall in a running pose, so scale is 0.012 to bring
+			-- it to about 0.95 m; feet at y = -0.122 scale to 0.0015.
+			fox = {
+				mesh = {
+					path = home .. "/.local/share/hypr3d/models/khronos/Fox.glb",
+					transform = {
+						position = { 0, 0.0015, 3.5 },
+						rotation = { 0, 200, 0 },
+						scale = { 0.012, 0.012, 0.012 },
 					},
 					flat = false,
 				},
