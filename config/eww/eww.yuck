@@ -1,0 +1,3 @@
+;; Top-level eww config. The music widget lives in music-widget/ and is included
+;; here so `eww toggle music-widget` works from a keybind or the bar.
+(include "./music-widget/eww.yuck")

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# Log out and hand the display to SDDM's greeter.
+#
+# Not `loginctl terminate-user`: that kills the user manager too, so sddm-helper
+# dies non-zero, SDDM logs a crashed helper and never restarts the greeter.
+# Ending the session cleanly is not always enough either, hence the explicit
+# SwitchToGreeter call, which is what dm-tool does. dmtool is not packaged here.
+# A uwsm session needs `uwsm stop` first or its `start --wait` never returns.
+
+set -uo pipefail
+
+DM=org.freedesktop.DisplayManager
+SEAT=/org/freedesktop/DisplayManager/Seat0
+
+if systemctl --user is-active --quiet wayland-wm@hyprland.desktop.service; then
+	uwsm stop
+fi
+
+loginctl terminate-session "$XDG_SESSION_ID"
+
+# Wait for the session to actually end, then make SDDM put its greeter up rather
+# than leaving the display dark.
+for _ in $(seq 1 20); do
+	sleep 1
+	if [ "$(loginctl show-session "$XDG_SESSION_ID" -p Active --value 2>/dev/null)" = "no" ]; then
+		busctl --system call "$DM" "$SEAT" org.freedesktop.DisplayManager.Seat SwitchToGreeter 2>/dev/null || true
+		exit 0
+	fi
+done

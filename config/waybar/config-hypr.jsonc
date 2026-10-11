@@ -1,82 +1,26 @@
-// Generated from config-niri.jsonc, the bar this machine already uses.
+// Main bar.
 {
-  "reload_style_on_change": false,
-  "layer": "top",
-  "position": "top",
-  "spacing": 5,
-  "height": 24,
+    "include": [
+        "$HOME/.config/waybar/Modules",
+        "$HOME/.config/waybar/ModulesCustom"
+    ],
 
-  "modules-left": ["hyprland/workspaces"],
-  "modules-center": ["clock"],
-  "modules-right": [
-    "tray",
-    "wireplumber",
-    "backlight",
-    "battery",
-    "custom/swaync"
-  ],
-  "hyprland/workspaces": {
-    "format": "{icon}",
-    "format-icons": {
-      "active": "\u25c6",
-      "persistent": "\u25c6",
-      "default": "\u25c6",
-      "empty": "\u25c7"
-    },
-    "disable-scroll": false,
-    "all-outputs": true
-  },
-  "custom/swaync": {
-    "format": "\uf0f3",                                    // nf-fa-bell
-    "tooltip": false,
-    "exec": "swaync-client -sw --count 2>/dev/null || echo 0",
-    "on-click": "swaync-client --toggle-panel",
-    "interval": 5
-  },
+    "name": "main",
+    "reload_style_on_change": false,
+    "layer": "top",
+    "position": "top",
+    "margin": "1px",
+    "spacing": 0,
+    "height": 24,
 
-  "custom/media": {
-    "exec": "bash ~/.config/waybar/scripts/media-title.sh",
-    "interval": 2,
-    "hide-empty-text": true,
-    "max-length": 40,
-    "escape": true
-  },
-
-  "tray": {
-    "icon-size": 14,
-    "spacing": 4
-  },
-  "wireplumber": {
-    "scroll-step": 5,
-    "format": " {icon} {volume}%",
-    "format-muted": "󰝟 muted",
-    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    "format-icons": {
-      "default": ["󰕿", "󰖀", "󰕾"],
-      "headphones": "󰋋",
-      "headset": "󰋎"
-    }
-  },
-
-  "backlight": {
-    "format": " {icon} {percent}% ",
-    "format-icons": ["󰃞", "󰃟", "󰃠"]
-  },
-
-  "battery": {
-    "states": { "warning": 30, "critical": 15 },
-    "on-click": "bash ~/.config/waybar/scripts/toggle-hyprsunset",
-    "format": "{icon} {capacity}% ",
-    "format-charging": "󰂄 {capacity}% ",
-    "format-plugged": "󱟦 {capacity}% ",
-    "format-full": "󰁹 {capacity}% ",
-    "format-icons": [
-      "󰂎", "󰁺", "󰁻", "󰁼", "󰁽",
-      "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"
+    "modules-left": ["hyprland/workspaces"],
+    "modules-center": ["mpris"],
+    "modules-right": [
+        "pulseaudio",
+        "backlight",
+        "battery",
+        "custom/mako",
+        "custom/power",
+        "clock"
     ]
-  },
-
-  "clock": {
-    "format": "{:%m-%d-%Y  %I:%M %p}"
-  }
 }

@@ -31,8 +31,6 @@ if [[ $images -eq 0 ]]; then
     exit 1
 fi
 
-THEME_HOOK="$HOME/.local/bin/theme-from-wallpaper"
-
 matuwall --directory "$dir" \
          --backend awww \
          --backend-arg --transition-type \
@@ -41,6 +39,4 @@ matuwall --directory "$dir" \
          --backend-arg center \
          --backend-arg --transition-duration \
          --backend-arg 1.5 \
-         --no-preview \
-         --no-hooks \
-         --hook "$THEME_HOOK"
+         --no-preview

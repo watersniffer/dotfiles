@@ -12,8 +12,8 @@ bold_italic = { family = "JetBrainsMono Nerd Font Mono", style = "Bold Italic" }
 offset = { x = 0, y = 0 }
 
 [colors]
-# 6-digit hex only, no alpha, so the pane is always filled. opacity is the only
-# lever; self_sample in hyprland.lua keeps the text readable over the glass.
+# 6-digit hex only, no alpha, so the pane is always filled. This is the only
+# lever for transparency; Hyprland's own opacity stacks on top of it.
 primary = { background = "#000000", foreground = "#d7d6df" }
 cursor = { text = "#000000", cursor = "#d7d6df" }
 selection = { text = "#d7d6df", background = "#2a2a2a" }
@@ -22,7 +22,8 @@ selection = { text = "#d7d6df", background = "#2a2a2a" }
 padding = { x = 8, y = 6 }
 dynamic_padding = true
 decorations = "Full"
-opacity = 0.72
+# The compositor sets window opacity to 0.9, so this stacks on top of it.
+opacity = 0.65
 dynamic_title = true
 
 [scrolling]

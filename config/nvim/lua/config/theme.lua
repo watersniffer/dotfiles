@@ -1,4 +1,4 @@
 return {
-	colorscheme = "wallpaper",
+	colorscheme = "catppuccin",
 	flavour = "mocha",
 }

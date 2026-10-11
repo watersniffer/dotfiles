@@ -1,7 +1,0 @@
-[General]
-font=Open Sans,10,-1,5,50,0,0,0,0,0
-
-[ColorScheme]
-active_colors={color15}, {color0}, {color8}, {color1}, {color0}, {color15}, {color15}, {color1}, {color15}, {color15}, {color4}, {color0}, {color4}, {color5}, {color3}, {color2}, {color0}, {color0}, {color8}, {color6}, {color0}
-disabled_colors={color8}, {color0}, {color8}, {color1}, {color0}, {color8}, {color8}, {color1}, {color8}, {color8}, {color2}, {color0}, {color3}, {color2}, {color2}, {color3}, {color0}, {color0}, {color8}, {color6}, {color0}
-inactive_colors={color8}, {color0}, {color8}, {color1}, {color0}, {color8}, {color8}, {color1}, {color8}, {color8}, {color2}, {color0}, {color3}, {color2}, {color2}, {color3}, {color0}, {color0}, {color8}, {color6}, {color0}

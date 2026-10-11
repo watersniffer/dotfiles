@@ -1,0 +1,15 @@
+[Unit]
+Description=eww widget daemon
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/eww -c %h/.config/eww daemon
+ExecReload=/usr/bin/eww -c %h/.config/eww reload
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

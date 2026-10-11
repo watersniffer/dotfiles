@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# Hide or show the waybar. Bound to Super+Shift+W in hyprland.lua.
+#
+# The signal, not a kill:
+#
+#   This build has on-sigusr1 = "toggle" and on-sigusr2 = "reload", confirmed in
+#   the binary via the "on-sigusr1"/"on-sigusr2" strings and their fallback
+#   messages ("Falling back to default mode (toggle)" / "(reload)"). Neither is
+#   overridden in config-hypr.jsonc, so the defaults are what actually run.
+#
+#   SIGUSR1 toggles the bar's visibility and keeps the process alive, so the
+#   next toggle is instant and no state is rebuilt. SIGUSR2 is the opposite: it
+#   reloads and leaves visibility alone. Killing and restarting the bar would
+#   work too but rebuilds the whole thing on every press, and a plain
+#   `hyprctl dispatch exec` has no way to target a specific pid, so pgrep is
+#   the only handle available.
+#
+# pgrep -x, not -f. -x matches the process name exactly, which is the right tool
+# here: "waybar" is 6 characters, so the 15-character limit that defeats -x for
+# nwg-dock-hyprland does not apply.
+#
+# -f would be wrong in both directions. It matches the full command line, so any
+# shell or pipeline that merely mentions "waybar -c" -- including a pgrep or xargs
+# invoked from this script -- reports itself as a match. Measured: pgrep -f
+# 'waybar -c' returned three pids where only one real waybar was running.
+
+set -u
+
+WAYBAR_CONF="$HOME/.config/waybar/config-hypr.jsonc"
+WAYBAR_STYLE="$HOME/.config/waybar/style.css"
+
+pids="$(pgrep -x waybar || true)"
+
+if [[ -z "$pids" ]]; then
+    # Nothing running, so start it. Whichever way the bar was meant to come back,
+    # this is the same command line hyprland.lua uses at line 447.
+    waybar -c "$WAYBAR_CONF" -s "$WAYBAR_STYLE" >/dev/null 2>&1 &
+    disown
+    printf 'waybar: not running, started it\n' >&2
+    exit 0
+fi
+
+# More than one bar is a bug, not something to toggle in sequence. Kill the
+# extras so the toggle is predictable from here on.
+count="$(printf '%s\n' "$pids" | wc -l)"
+if [[ "$count" -gt 1 ]]; then
+    printf 'waybar: %s instances running, keeping the first\n' "$count" >&2
+    # Keep the lowest pid (the original), stop the rest.
+    keep="$(printf '%s\n' "$pids" | sort -n | head -1)"
+    printf '%s\n' "$pids" | grep -vx "$keep" | xargs -r kill 2>/dev/null || true
+    pids="$keep"
+fi
+
+# Unquoted on purpose: this is a list of one pid in the normal case, and word
+# splitting is what makes it a list. Quoting would pass "123 456" as one
+# argument and kill -USR1 would reject it.
+kill -USR1 $pids

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#
+# Power menu. Logout goes through logout-session; the rationale for not using
+# wlogout's own button lives in that script.
+#
+# Glyphs are Nerd Font codepoints, and rofi uses JetBrainsMono Nerd Font.
+
+set -uo pipefail
+
+choice=$(
+	printf '%s\n' \
+		$'\uf057  Cancel' \
+		$'\uf08b  Logout' \
+		$'\uf023  Lock' \
+		$'\uf186  Suspend' \
+		$'\uf240  Hibernate' \
+		$'\uf021  Reboot' \
+		$'\uf015  Shutdown' |
+		rofi -dmenu -i -p "Power" -mesg "Session actions"
+)
+
+case ${choice##* } in
+	Cancel|"") exit 0 ;;
+	Logout) "$HOME/.local/bin/logout-session" ;;
+	Lock) loginctl lock-session ;;
+	Suspend) systemctl suspend ;;
+	Hibernate) systemctl hibernate ;;
+	Reboot) systemctl reboot ;;
+	Shutdown) systemctl poweroff ;;
+esac

@@ -73,7 +73,7 @@ hl.config({
 
 		blur = {
 			enabled = true,
-			size = 2,
+			size = 3,
 			passes = 1,
 			vibrancy = 0.1696,
 		},
@@ -189,7 +189,7 @@ if _path:sub(1, #_bin) ~= _bin then
 end
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_STYLE_OVERRIDE", "kvantum")
-hl.env("QT_SCALE_FACTOR", "0.92")
+hl.env("QT_SCALE_FACTOR", "0.90")
 hl.env("EDITOR", "nvim")
 hl.env("VISUAL", "nvim")
 hl.env("TERMINAL", "alacritty")
@@ -207,9 +207,8 @@ hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
 
 -- The Spotify web app, installed as a Firefox PWA.
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("firefoxpwa site launch 01M4GK4HT0HCJEQ4EKX0Z96M0V"))
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
-hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(home .. "/.local/bin/theme-from-wallpaper"))
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
 
 hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper"))
@@ -254,7 +253,8 @@ for i = 1, 10 do
 	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
-hl.bind(mainMod .. " + U", hl.dsp.exec_cmd("wlogout"))
+hl.bind(mainMod .. " + U", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"))
+hl.bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(home .. "/.local/bin/logout-session"))
 hl.bind(mainMod .. " + c", hl.dsp.exec_cmd(home .. "/.local/bin/clipboard-history"))
 
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
@@ -375,49 +375,4 @@ hl.window_rule({
 	name = "terminal-no-shadow",
 	match = { class = "^Alacritty$" },
 	no_shadow = true,
-})
-
----------------------------
----- HYPRGLASS PLUGIN ----
----------------------------
-
--- https://github.com/hyprnux/hyprglass
---
--- The effect is on globally by default and covers every window, Alacritty
--- included. This block only tunes it: a dark theme against the black desktop,
--- and the Waybar layer so the bar gets glass too.
---
--- hl.plugin is nil when the plugin is not loaded, which is why this is guarded:
--- a config block for an absent plugin is a config error and would blank the
--- whole compositor.
-if hl.plugin.hyprglass then
-	local hg = hl.plugin.hyprglass
-
-	hg.config({
-		default_theme = "dark",
-		default_preset = "clear",
-
-		brightness = 0.85,
-		contrast = 1.1,
-		saturation = 1.0,
-		tint_color = 0x00000000,
-		dark = { brightness = 0.8 },
-
-		-- A terminal paints its own fill over the glass, so at the default skip
-		-- you only get the fill plus Hyprland's blur, with no refraction.
-		skip_opaque_windows = false,
-		self_sample = 0.55,
-
-		layers = { enabled = true },
-	})
-
-	hg.layer("waybar", { preset = "subtle" })
-	hg.layer("swaync")
-end
-
--- pomme's lensing is edge-only, so the text in the middle is left alone.
-hl.window_rule({
-	name = "alacritty-glass",
-	match = { class = "^Alacritty$" },
-	tag = "+hyprglass_preset_pomme",
 })

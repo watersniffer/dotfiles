@@ -30,6 +30,3 @@ border = "#00000000"
 shadow = "#00000000"
 ring = "#d7d6df"
 spinner = "#d7d6df"
-
-[hooks]
-on_apply = ["/home/water/.local/bin/theme-from-wallpaper"]

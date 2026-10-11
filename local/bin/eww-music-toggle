@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# Toggle the eww music widget; eww 0.6.0 has no `toggle` subcommand.
+#
+# `list-windows` lists every window the config defines, so it always contains
+# music-widget and cannot say if the widget is open; `active-windows` lists only
+# the open ones, as "<id>: <name>". Without XDG_RUNTIME_DIR eww cannot find its
+# daemon and starts a second one instead, so set it defensively.
+
+set -uo pipefail
+
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+: "${WAYLAND_DISPLAY:=wayland-1}"
+export XDG_RUNTIME_DIR WAYLAND_DISPLAY
+
+CONFIG="$HOME/.config/eww"
+WINDOW="music-widget"
+
+if eww -c "$CONFIG" active-windows 2>/dev/null | grep -q ": ${WINDOW}\$"; then
+	eww -c "$CONFIG" close "$WINDOW" 2>/dev/null
+else
+	eww -c "$CONFIG" open "$WINDOW" 2>/dev/null
+fi
