@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+WALL_ROOT="$HOME/Pictures/Wallpapers"
+
+folder=${1:-}
+
+if [[ -n $folder ]]; then
+    if [[ $folder == /* ]]; then
+        dir=$folder
+    else
+        dir="$WALL_ROOT/$folder"
+    fi
+else
+    dir="$WALL_ROOT"
+fi
+
+if [[ ! -d $dir ]]; then
+    printf "wallpaper-switcher: '%s' does not exist\n" "$dir" >&2
+    exit 1
+fi
+
+images=$(find "$dir" -maxdepth 1 -type f \
+    \( -iname '*.jpg' -o -iname '*.png' -o -iname '*.jpeg' \
+       -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.avif' \) \
+    2>/dev/null | wc -l)
+
+if [[ $images -eq 0 ]]; then
+    printf 'wallpaper-switcher: no images in %s\n' "$dir" >&2
+    exit 1
+fi
+
+matuwall --directory "$dir" \
+         --backend awww \
+         --backend-arg --transition-type \
+         --backend-arg grow \
+         --backend-arg --transition-pos \
+         --backend-arg center \
+         --backend-arg --transition-duration \
+         --backend-arg 1.5 \
+         --no-preview

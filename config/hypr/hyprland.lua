@@ -11,11 +11,30 @@ local terminal = "alacritty"
 local fileManager = "thunar"
 local menu = "hyprlauncher"
 
+hl.on("hyprland.start", function()
+	hl.exec_cmd(home .. "/.local/bin/at_startup")
+end)
+
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 hl.env("SHELL", "/usr/bin/zsh")
 
--- Decorations
+-- Theme colours, generated into theme.lua by the theme switcher.
+local theme = {
+	name = "gruvbox",
+	label = "Gruvbox Dark",
+	active_border = "rgba(7c6f64ff)",
+	inactive_border = "rgba(665c54ff)",
+	shadow_color = "0xee1a1a1a",
+}
+
+do
+	local loaded = { pcall(dofile, home .. "/.config/hypr/theme.lua") }
+	if loaded[1] and type(loaded[2]) == "table" then
+		theme = loaded[2]
+	end
+end
+
 hl.config({
 	general = {
 		gaps_in = 5,
@@ -23,6 +42,12 @@ hl.config({
 
 		border_size = 0,
 
+		col = {
+			active_border = theme.active_border,
+			inactive_border = theme.inactive_border,
+		},
+
+		-- Set to true to enable resizing windows by clicking and dragging on borders and gaps
 		resize_on_border = false,
 
 		-- Please see https://wiki.hypr.land/Configuring/Advanced-and-Cool/Tearing/ before you turn this on
@@ -35,6 +60,7 @@ hl.config({
 		rounding = 10,
 		rounding_power = 2,
 
+		-- Change transparency of focused and unfocused windows
 		active_opacity = 1.0,
 		inactive_opacity = 1.0,
 
@@ -47,7 +73,7 @@ hl.config({
 
 		blur = {
 			enabled = true,
-			size = 2,
+			size = 3,
 			passes = 1,
 			vibrancy = 0.1696,
 		},
@@ -91,18 +117,21 @@ hl.animation({ leaf = "zoomFactor", enabled = true, speed = 6, bezier = "quick" 
 hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 2.5, bezier = "bounce", style = "slidevert" })
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2.5, bezier = "quick", style = "slidevert" })
 
+-- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/ for more
 hl.config({
 	dwindle = {
 		preserve_split = true, -- You probably want this
 	},
 })
 
+-- See https://wiki.hypr.land/Configuring/Layouts/Master-Layout/ for more
 hl.config({
 	master = {
 		new_status = "master",
 	},
 })
 
+-- See https://wiki.hypr.land/Configuring/Layouts/Scrolling-Layout/ for more
 hl.config({
 	scrolling = {
 		fullscreen_on_one_column = true,
@@ -151,6 +180,8 @@ hl.device({
 	sensitivity = -0.5,
 })
 
+-- Guarded: this runs on every reload, so an unconditional prepend would add
+-- one copy of ~/.local/bin per reload.
 local _bin = home .. "/.local/bin"
 local _path = os.getenv("PATH") or ""
 if _path:sub(1, #_bin) ~= _bin then
@@ -168,19 +199,107 @@ local mainMod = "SUPER" -- the stock declaration lived in the block replaced abo
 local stepW = 136 -- 10% of this 1366x768 panel, rounded
 local stepH = 76
 
+-- --- launchers; the app launcher is Super+Space, as in niri ---
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
 
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("rofi -show drun"))
+-- The Spotify web app, installed as a Firefox PWA.
+hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
+
+hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper"))
+hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper --toggle-sound"))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/toggle-waybar"))
+hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratch" }))
 
+-- https://github.com/samine825/Hypr3D
+--
+-- hl.plugin is nil when the plugin is not loaded, so this has to be guarded: a
+-- config block referencing an absent plugin is a config error.
+if hl.plugin.hypr3d then
+	local hypr3d = hl.plugin.hypr3d
+
+	hl.bind("SUPER + P", hypr3d.toggle)
+
+	hypr3d.config({
+		world = {
+			grid = true,
+		},
+		windows = {
+			window_scale = 0.25,
+			spawn_distance = 2,
+		},
+		player = {
+			-- spawn is the FEET (eyes ride kEyeHeight = 1.62 above), so y = 0
+			-- stands on the grid. x = -3 because yaw = atan2(-x, z), which turns
+			-- the camera to face the character standing at the origin.
+			spawn = { -3, 0, 0 },
+			flying = false,
+			move_speed = 2.5,
+			collision = true,
+		},
+		scene = {
+			-- Positions come from each model's own bounds: feet are at the
+			-- accessor min-Y, so every lift below is that value scaled.
+
+			-- Downloaded model. 1.899 m, centred, feet at y = -0.95.
+			warrior = {
+				mesh = {
+					path = home .. "/.local/share/hypr3d/models/warrior/source/model.glb",
+					transform = { position = { 0, 0.95, 0 } },
+					flat = false,
+				},
+				collision = true,
+				static = true,
+			},
+
+			-- CesiumMan, Khronos sample, CC-BY-4.0. Rigged human, 1.138 m
+			-- with feet at y = -0.569; scaled 1.5x that lift is 0.854.
+			cesiumman = {
+				mesh = {
+					path = home .. "/.local/share/hypr3d/models/khronos/CesiumMan.glb",
+					transform = {
+						position = { 0, 0.854, -3 },
+						rotation = { 0, 180, 0 },
+						scale = { 1.5, 1.5, 1.5 },
+					},
+					flat = false,
+				},
+				collision = true,
+				static = true,
+			},
+
+			-- Fox, Khronos sample, CC0-1.0, so no attribution is owed.
+			-- Modelled 79 m tall in a running pose, so scale is 0.012 to bring
+			-- it to about 0.95 m; feet at y = -0.122 scale to 0.0015.
+			fox = {
+				mesh = {
+					path = home .. "/.local/share/hypr3d/models/khronos/Fox.glb",
+					transform = {
+						position = { 0, 0.0015, 3.5 },
+						rotation = { 0, 200, 0 },
+						scale = { 0.012, 0.012, 0.012 },
+					},
+					flat = false,
+				},
+				collision = true,
+				static = true,
+			},
+		},
+	})
+end
+
+-- --- window management ---
 hl.bind(mainMod .. " + Q", hl.dsp.window.close())
+
 hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("matuwall"))
+
 hl.bind("SUPER + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 -- --- focus: Left/Right walk columns, Up/Down walk windows inside one ---
 hl.bind(mainMod .. " + left", hl.dsp.focus({ direction = "left" }))
@@ -188,7 +307,7 @@ hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
 hl.bind(mainMod .. " + up", hl.dsp.focus({ direction = "up" }))
 hl.bind(mainMod .. " + down", hl.dsp.focus({ direction = "down" }))
 
--- --- move, as window's mover ---
+-- --- move, as niri's Mod+Ctrl+Arrow ---
 hl.bind(mainMod .. " + CTRL + left", hl.dsp.window.move({ direction = "left" }))
 hl.bind(mainMod .. " + CTRL + right", hl.dsp.window.move({ direction = "right" }))
 hl.bind(mainMod .. " + CTRL + up", hl.dsp.window.move({ direction = "up" }))
@@ -208,6 +327,9 @@ end
 
 hl.bind(mainMod .. " + U", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"))
 hl.bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(home .. "/.local/bin/logout-session"))
+hl.bind(mainMod .. " + c", hl.dsp.exec_cmd(home .. "/.local/bin/clipboard-history"))
+
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 
 -- --- drag and resize with the mouse ---
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -241,10 +363,26 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("brightness-step down"), { repe
 hl.bind(mainMod .. " + SHIFT + P", hl.dsp.exec_cmd(home .. "/.local/bin/power-mode"))
 
 hl.on("hyprland.start", function()
+	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
 	hl.exec_cmd("systemctl --user restart xdg-desktop-portal.service")
+
+	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
+
+	hl.exec_cmd("awww-daemon")
+	hl.exec_cmd(
+		"sleep 1; awww restore || awww img -- "
+			.. home
+			.. "/Pictures/Wallpapers/a_river_running_through_a_small_town.jpg"
+	)
+
+	hl.exec_cmd(home .. "/.local/bin/clipboard-watcher")
+
+	-- Session services.
 	hl.exec_cmd("nm-applet")
 	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
-	hl.exec_cmd("awww daemon")
+	hl.exec_cmd("alacritty")
+
+	hl.exec_cmd("hypridle")
 end)
 
 local suppressMaximizeRule = hl.window_rule({
@@ -302,6 +440,8 @@ hl.window_rule({
 
 	workspace = "special:dank",
 })
+
+-- No float/size/move rule for Dank Calendar: it tiles like any other window.
 
 hl.window_rule({
 	name = "terminal-no-shadow",

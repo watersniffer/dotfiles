@@ -1,0 +1,79 @@
+// Modules for the atif-1402 V1.5 layout, minus its omarchy and vicinae modules.
+{
+    "clock": {
+        "format": " {:%I:%M %p}",
+        "format-alt": "{:%A  |  %H:%M  |  %e %B}",
+        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+    },
+
+    "battery": {
+        "format": "{icon} {capacity}%",
+        "states": { "warning": 30, "critical": 15 },
+        "on-click": "bash ~/.config/waybar/scripts/toggle-hyprsunset",
+        "format-charging": "󰂄 {capacity}%",
+        "format-plugged": "󱟦 {capacity}%",
+        "format-full": "󰁹 {capacity}%",
+        "format-icons": [
+            "󰂎", "󰁺", "󰁻", "󰁼", "󰁽",
+            "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"
+        ]
+    },
+
+    "pulseaudio": {
+        "format": "{icon} {volume}%",
+        "format-bluetooth": "{icon} {volume}%",
+        "format-muted": "󰝟",
+        "format-icons": {
+            "headphone": "",
+            "headset": "",
+            "default": ["", ""]
+        },
+        "scroll-step": 5,
+        "ignored-sinks": ["Easy Effects Sink"]
+    },
+
+    "backlight": {
+        "format": "{icon} {percent}%",
+        "format-icons": ["󰃞", "󰃟", "󰃠"]
+    },
+
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "1": "1", "2": "2", "3": "3", "4": "4", "5": "5",
+            "6": "6", "7": "7", "8": "8", "9": "9", "10": "10"
+        },
+        "on-scroll-up": "hyprctl dispatch workspace e+1",
+        "on-scroll-down": "hyprctl dispatch workspace e-1",
+        "persistent-workspaces": { "*": 5 }
+    },
+
+    "mpris": {
+        "interval": 10,
+        "format": "{player_icon} {dynamic}",
+        "format-paused": "{status_icon} {artist} {title}",
+        "on-click": "$HOME/.local/bin/eww-music-toggle",
+        "on-click-middle": "playerctl play-pause",
+        "on-click-right": "playerctl next",
+        "scroll-step": 5.0,
+        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
+        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
+        "smooth-scrolling-threshold": 1,
+        "tooltip": true,
+        "tooltip-format": "{status_icon} {dynamic}",
+        "player-icons": {
+            "chromium": "",
+            "firefox": "",
+            "mpv": "󰐹",
+            "spotify": "",
+            "default": ""
+        },
+        "status-icons": {
+            "paused": "󰐎",
+            "playing": "",
+            "stopped": ""
+        },
+        "dynamic-order": ["artist", "title"],
+        "max-length": 40
+    }
+}
