@@ -5,7 +5,7 @@ After=graphical-session.target
 ConditionEnvironment=WAYLAND_DISPLAY
 
 [Service]
-Type=simple
+Type=forking
 ExecStart=/usr/bin/eww -c %h/.config/eww daemon
 ExecReload=/usr/bin/eww -c %h/.config/eww reload
 Restart=on-failure
