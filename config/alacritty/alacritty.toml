@@ -5,10 +5,10 @@ live_config_reload = true
 
 [font]
 size = 10.0
-normal = { family = "JetBrainsMono Nerd Font Mono", style = "Regular" }
-bold = { family = "JetBrainsMono Nerd Font Mono", style = "Bold" }
-italic = { family = "JetBrainsMono Nerd Font Mono", style = "Italic" }
-bold_italic = { family = "JetBrainsMono Nerd Font Mono", style = "Bold Italic" }
+normal = { family = "Iosevka Nerd Font Mono", style = "Regular" }
+bold = { family = "Iosevka Nerd Font Mono", style = "Bold" }
+italic = { family = "Iosevka Nerd Font Mono", style = "Italic" }
+bold_italic = { family = "Iosevka Nerd Font Mono", style = "Bold Italic" }
 offset = { x = 0, y = 0 }
 
 [colors]

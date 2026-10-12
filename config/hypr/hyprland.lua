@@ -38,7 +38,7 @@ end
 hl.config({
 	general = {
 		gaps_in = 5,
-		gaps_out = 5,
+		gaps_out = 2,
 
 		border_size = 0,
 
@@ -57,8 +57,7 @@ hl.config({
 	},
 
 	decoration = {
-		rounding = 10,
-		rounding_power = 2,
+		rounding = 0,
 
 		-- Change transparency of focused and unfocused windows
 		active_opacity = 1.0,
@@ -144,7 +143,7 @@ hl.config({
 		disable_hyprland_logo = false, -- If true disables the random hyprland logo / anime girl background. :(
 
 		-- error unreadable exactly when you need to read it.
-		splash_font_family = "Open Sans",
+		splash_font_family = "Iosevka Nerd Font",
 	},
 })
 

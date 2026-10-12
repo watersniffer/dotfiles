@@ -1,8 +1,8 @@
--- AMOLED: black surfaces, a single light accent. Fixed, no pywal.
-return {
-	name = "amoled",
-	label = "AMOLED Black",
-	active_border   = "rgba(d7d6dfff)",
-	inactive_border = "rgba(4a4a4aff)",
-	shadow_color = "0x000000ff",
+local theme = {
+	name = "pywal",
+	label = "Pywal (wallpaper)",
+	active_border = "rgba(5E6276ff)",
+	inactive_border = "rgba(0b0b11ff)",
+	shadow_color = "0xee0b0b11",
 }
+return theme

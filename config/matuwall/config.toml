@@ -2,7 +2,10 @@
 
 [general]
 directory = "/home/water/Pictures/Wallpapers"
-backend = "awww"
+backend = "command"
+
+[backend.command]
+apply = "/home/water/.local/bin/wal-theme {path}"
 
 [window]
 preview = false
