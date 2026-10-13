@@ -82,5 +82,17 @@
         },
         "dynamic-order": ["artist", "title"],
         "max-length": 40
+    },
+    
+    "wlr/taskbar": {
+        "show-tabs": false,
+        "show-windows": true,
+        "grouping": "appname",
+        "icon-size": 14,
+        "spacing": 2,
+        "rounded-corners": true,
+        "on-click": "activate",
+        "on-click-middle": "close",
+        "min-launchers": 0
     }
 }

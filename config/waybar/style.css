@@ -130,3 +130,31 @@ tooltip label {
     margin: 0 4px 0 8px;
     color: @text;
 }
+
+/* Taskbar — its own pill in the centre, left of mpris. */
+#wlr\/taskbar {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin: 0 4px 0 8px;
+}
+
+#wlr\/taskbar button {
+    background: transparent;
+    border-radius: 6px;
+    color: @subtext;
+    min-width: 0;
+    padding: 1px 4px;
+    margin: 0 1px;
+    transition: all 150ms ease-in-out;
+}
+
+#wlr\/taskbar button:hover {
+    background: @bg2;
+    color: @text;
+}
+
+#wlr\/taskbar button.active {
+    background: @text;
+    color: @base;
+}
