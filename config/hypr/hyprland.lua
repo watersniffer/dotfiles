@@ -192,6 +192,9 @@ end
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QT_STYLE_OVERRIDE", "kvantum")
 hl.env("QT_SCALE_FACTOR", "0.90")
+-- Krita (and other KDE apps) override qt6ct's [Fonts], so force the family
+-- directly for all Qt apps instead.
+hl.env("QT_FONT_FAMILY", "Iosevka Nerd Font")
 hl.env("EDITOR", "nvim")
 hl.env("VISUAL", "nvim")
 hl.env("TERMINAL", "alacritty")
