@@ -1,5 +1,6 @@
 /* Floating islands: the bar itself is transparent, each module is its own black
-   pill. AMOLED, so black on black with one light accent for text. */
+   pill. AMOLED, so black on black with one light accent for text. The right
+   side is one continuous pill (a waybar group) instead of separate islands. */
 
 @import "colors.css";
 
@@ -29,15 +30,9 @@ tooltip label {
     color: @text;
 }
 
-/* Every module is a separate island. */
+/* Left + center stay separate islands. */
 #workspaces,
-#mpris,
-#clock,
-#pulseaudio,
-#backlight,
-#battery,
-#custom-mako,
-#custom-power {
+#mpris {
     background: @base;
     border-radius: 6px;
     padding: 2px 8px;
@@ -65,25 +60,24 @@ tooltip label {
     border-radius: 6px;
 }
 
-/* Tight cluster on the right: volume, brightness and battery sit almost
-   against each other, with more air around mako, power and the clock. */
+/* The right side is ONE pill: the group container carries the background, and
+   the modules inside it are transparent with a little breathing room. */
+#right {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 4px;
+    margin: 0 4px;
+}
+
 #pulseaudio,
 #backlight,
-#battery {
-    margin: 0 1px;
-}
-
-#custom-mako,
-#custom-power {
-    margin: 0 1px;
-}
-
-#custom-mako {
-    margin-left: 6px;
-}
-
-#custom-power {
-    margin-right: 6px;
+#battery,
+#tray,
+#clock {
+    background: transparent;
+    padding: 0 6px;
+    margin: 0;
+    border-radius: 0;
 }
 
 #clock {
@@ -94,3 +88,36 @@ tooltip label {
     margin: 0 8px;
 }
 
+/* Brightness slider, always visible (module id backlight/slider → GTK name
+   #backlight-slider). Fixed width so it doesn't open a gap; dark trough,
+   AMOLED-accent fill + handle. GTK has no max-width, so min-width sets it. */
+#backlight-slider {
+    min-width: 56px;
+    padding: 0 6px;
+    margin: 0;
+    background: transparent;
+}
+
+#backlight-slider trough {
+    min-width: 56px;
+    min-height: 4px;
+    background: @bg3;
+    border-radius: 4px;
+    margin: 0;
+    padding: 0;
+}
+
+#backlight-slider highlight {
+    min-height: 4px;
+    background: @text;
+    border-radius: 4px;
+}
+
+#backlight-slider slider {
+    min-width: 8px;
+    min-height: 8px;
+    margin: -2px;
+    background: @text;
+    border-radius: 50%;
+    box-shadow: none;
+}

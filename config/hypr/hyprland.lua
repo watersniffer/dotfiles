@@ -213,8 +213,9 @@ hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
 
-hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper"))
+hl.bind(mainMod .. " + N", hl.dsp.exec_cmd(home .. "/.local/bin/video-wallpaper-picker"))
 hl.bind(mainMod .. " + SHIFT + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper --toggle-sound"))
+hl.bind(mainMod .. " + CTRL + N", hl.dsp.exec_cmd(home .. "/.local/bin/animated-wallpaper"))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/toggle-waybar"))
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))

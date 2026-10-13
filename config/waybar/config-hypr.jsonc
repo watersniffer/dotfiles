@@ -16,11 +16,19 @@
     "modules-left": ["hyprland/workspaces"],
     "modules-center": ["mpris"],
     "modules-right": [
-        "pulseaudio",
-        "backlight",
-        "battery",
-        "custom/mako",
-        "custom/power",
-        "clock"
-    ]
+        "group/right"
+    ],
+
+    // One continuous pill holding every right-side module, instead of
+    // separate floating islands.
+    "group/right": {
+        "orientation": "horizontal",
+        "modules": [
+            "tray",
+            "pulseaudio",
+            "backlight/slider",
+            "battery",
+            "clock"
+        ]
+    }
 }

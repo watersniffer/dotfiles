@@ -1,19 +1,5 @@
 // Custom modules for the V1.5 layout. Power opens the rofi power menu.
 {
-    "custom/mako": {
-        "format": "",
-        "tooltip": false,
-        "exec": "makoctl list 2>/dev/null | grep -c '^Notification' || echo 0",
-        "on-click": "makoctl dismiss -a",
-        "interval": 10
-    },
-
-    "custom/power": {
-        "format": "⏻",
-        "on-click": "~/.local/bin/power-menu",
-        "tooltip": true,
-        "tooltip-format": "Power menu"
-    },
 
     "custom/separator#dot": {
         "format": "",

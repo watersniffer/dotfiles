@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+# Rofi video wallpaper picker. Lists every video under ~/Pictures/Wallpapers
+# (recursively) and plays the one you pick via mpvpaper.
+#
+# NOTE on thumbnails: this rofi build (2.0.0-dirty) does not render absolute-path
+# image icons in dmenu mode — it reserves the icon slot but never draws the
+# image, even for a known-good PNG, with no error logged. So this uses a clean
+# text list (your main rofi theme) rather than a broken thumbnail grid.
+
+set -uo pipefail
+
+WALL_ROOT="$HOME/Pictures/Wallpapers"
+OUTPUT="eDP-1"
+
+mapfile -d '' videos < <(find "$WALL_ROOT" -type f \
+    \( -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' -o -iname '*.mov' \) \
+    -print0 2>/dev/null | sort -z)
+
+if [[ ${#videos[@]} -eq 0 ]]; then
+    rofi -dmenu -i -p "Video wallpaper" \
+        -mesg "No videos found in $WALL_ROOT" >/dev/null 2>&1
+    exit 1
+fi
+
+# Build the list: label only, plus a leading "Stop" entry.
+{
+    printf '⏹  Stop video wallpaper\n'
+    for v in "${videos[@]}"; do
+        label="${v#"$WALL_ROOT"/}"
+        printf '%s\n' "${label%.*}"
+    done
+} > /tmp/.video-picker.list
+
+choice=$(rofi -dmenu -i -p "Video wallpaper" \
+    -theme "$HOME/.config/rofi/config.rasi" \
+    -mesg "Enter to play · Esc to cancel" \
+    < /tmp/.video-picker.list)
+
+[[ -z $choice ]] && exit 0
+
+if [[ $choice == *Stop\ video\ wallpaper* ]]; then
+    pkill -x mpvpaper 2>/dev/null
+    exit 0
+fi
+
+for v in "${videos[@]}"; do
+    label="${v#"$WALL_ROOT"/}"
+    if [[ "${label%.*}" == "$choice" ]]; then
+        pkill -x mpvpaper 2>/dev/null
+        sleep 0.3
+        mpvpaper -f -s -a full -o "no-audio loop" \
+            -o "input-ipc-server=/tmp/mpvpaper-sock" \
+            "$OUTPUT" "$v" >/dev/null 2>&1
+        exit 0
+    fi
+done
