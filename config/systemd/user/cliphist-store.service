@@ -1,0 +1,15 @@
+# cliphist history recorder, split from cliphist.service because wl-clip-persist
+# 0.5.0 cannot host an external command (no --watch).
+[Unit]
+Description=Record clipboard history with cliphist
+After=default.target
+PartOf=cliphist.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/wl-paste --watch cliphist store
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

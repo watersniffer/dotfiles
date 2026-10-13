@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#
+# Step the backlight. Bound to XF86MonBrightnessUp / XF86MonBrightnessDown.
+#
+# Why this exists rather than brightnessctl directly: brightnessctl can drive the
+# backlight to 0, but on this panel the LCD still emits light at 0. The backlight is
+# off while the display is still lit, so "0% brightness" is not a dark screen.
+#
+# THAT USED TO BE FIXED, AND NO LONGER IS
+# --------------------------------------
+# There was a Niri-specific path for it. At 0% it ran `niri msg action
+# power-off-monitors` and recorded a marker file, so that raising the brightness
+# again would run `power-on-monitors` first and the panel would wake before the
+# step landed on it. On Hyprland that path could never fire -- the action does not
+# exist -- and it was guarded by a `command -v niri` check that quietly returned
+# false. Niri is now uninstalled, so the code is gone rather than dead.
+#
+# The consequence, which is real and worth knowing: at 0% this panel stays faintly
+# lit. The lowest brightness you can actually reach is "backlight off, display still
+# on". Hyprland 0.56 has no DPMS dispatcher, so there is nothing to call instead.
+#
+#   brightness-step down   step down
+#   brightness-step up     step up
+#
+set -uo pipefail
+
+STEP="${BRIGHTNESS_STEP:-5}"
+
+current_brightness() { brightnessctl g 2>/dev/null || echo 0; }
+max_brightness() { brightnessctl m 2>/dev/null || echo 0; }
+
+# Integer percent, rounded, so 3/937 counts as 0 rather than 0.3.
+brightness_percent() {
+    local cur max
+    cur=$(current_brightness)
+    max=$(max_brightness)
+    if [[ "$max" -le 0 ]]; then
+        echo 0
+        return
+    fi
+    echo $(((cur * 100 + max / 2) / max))
+}
+
+icon_for() {
+    case "$1" in
+        0)  echo "notification-display-brightness-low" ;;
+        1)  echo "notification-display-brightness-off" ;;
+        100) echo "notification-display-brightness-full" ;;
+        *)  if   (( $1 > 70 )); then echo "notification-display-brightness-high"
+            elif (( $1 > 45 )); then echo "notification-display-brightness-medium"
+            else echo "notification-display-brightness-medium"
+            fi ;;
+    esac
+}
+
+notify() {
+    local pct
+    pct=$(brightness_percent)
+    notify-send --app-name "brightness" --icon "$(icon_for "$pct")" \
+        "Brightness" "$pct%" >/dev/null 2>&1 || true
+}
+
+case "${1-}" in
+    up)
+        brightnessctl set "$STEP%+" >/dev/null 2>&1
+        notify
+        ;;
+    down)
+        brightnessctl set "$STEP%-" >/dev/null 2>&1
+        notify
+        ;;
+    *)
+        echo "usage: $(basename "$0") up|down" >&2
+        exit 1
+        ;;
+esac

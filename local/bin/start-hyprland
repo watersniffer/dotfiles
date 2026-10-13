@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# start-hyprland -- launch the Hyprland session.
+#
+# greetd runs this as the logged-in user, from the greeter, so it is the
+# equivalent of what SDDM used to do before it was removed.
+set -u
+
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_TYPE=wayland
+export XDG_SESSION_CLASS=user
+
+# Only start a graphical session from a real VT; running it from a TTY on an
+# already-graphical session would fight the running compositor.
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+    exec Hyprland --config "$HOME/.config/hypr/hyprland.lua"
+fi
+
+exec Hyprland --config "$HOME/.config/hypr/hyprland.lua"

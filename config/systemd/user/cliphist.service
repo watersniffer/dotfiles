@@ -1,0 +1,27 @@
+# Local override of /usr/lib/systemd/user/cliphist.service.
+#
+# 1. graphical-session.target dependency dropped. This session is launched by
+#    ~/.local/bin/start-hyprland, which never pulls that target in, and the
+#    target has RefuseManualStart=yes so it cannot be started on demand either.
+#    The packaged Requisite= made this unit permanently unstartable, which is
+#    why the clipboard had gone unowned since the database last changed.
+#
+# 2. wl-clip-persist replaces wl-paste as the thing that HOLDS the selection.
+#    wl-paste --watch cliphist store only records what you copy; it never owns
+#    the selection, so nothing answers a paste once the copying program exits.
+#
+# 3. cliphist store runs as its own unit because wl-clip-persist 0.5.0 has no
+#    --watch and takes no external command. PartOf= keeps them in step.
+[Unit]
+Description=Wayland clipboard owner (wl-clip-persist) + cliphist history
+After=default.target
+Wants=cliphist-store.service
+
+[Service]
+Type=exec
+ExecStart=/usr/bin/wl-clip-persist --clipboard regular
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

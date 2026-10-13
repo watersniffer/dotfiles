@@ -1,0 +1,5 @@
+#!/usr/bin/env zsh
+# launched by hyprland.start in hyprland.lua
+systemctl --user start graphical-session.target 2>/dev/null
+nm-applet &disown
+~/.local/bin/toggle-waybar &disown
