@@ -342,7 +342,9 @@ hl.bind("ALT + Print", hl.dsp.exec_cmd('grim -g "$(echo ' .. winRegion .. ')" - 
 -- Interactive screenshot. This was Super+P, but that key was bound to
 -- hypr3d.toggle, which silently did nothing because the plugin isn't installed
 -- (and has since left the AUR). Flameshot was installed but unbound.
-hl.bind("SUPER + P", hl.dsp.exec_cmd("flameshot gui"))
+-- -c copies the capture to the clipboard, -s accepts the selection immediately,
+-- so there is no post-capture window to dismiss (and nothing to forget pressing).
+hl.bind("SUPER + P", hl.dsp.exec_cmd("flameshot gui -c -s"))
 
 hl.bind(
 	"XF86AudioRaiseVolume",
