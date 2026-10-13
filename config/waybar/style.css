@@ -121,3 +121,12 @@ tooltip label {
     border-radius: 50%;
     box-shadow: none;
 }
+
+/* cava visualiser — its own pill in the centre, beside mpris. */
+#custom-cava {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin: 0 4px 0 8px;
+    color: @text;
+}

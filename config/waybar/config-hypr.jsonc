@@ -14,7 +14,7 @@
     "height": 24,
 
     "modules-left": ["hyprland/workspaces"],
-    "modules-center": ["mpris"],
+    "modules-center": ["mpris", "custom/cava"],
     "modules-right": [
         "group/right"
     ],

@@ -1,5 +1,13 @@
-// Custom modules for the V1.5 layout. Power opens the rofi power menu.
+// Custom modules for the V1.5 layout.
 {
+
+    // cava visualiser (https://github.com/ray-pH/waybar-cava) — bars only, so
+    // it pairs with the mpris module next to it without duplicating its text.
+    "custom/cava": {
+        "format": "{}",
+        "exec": "$HOME/.config/waybar/scripts/cava.sh",
+        "escape": false
+    },
 
     "custom/separator#dot": {
         "format": "",
