@@ -78,16 +78,18 @@
 
 ;; --- Window Definition ---
 
-(defwindow music-widget
-  :monitor 0
-  :geometry (
-    ;; Centred under the bar: the panel is 1366 wide, the media module is in
-    ;; modules-center so it sits at x=683, and a 460px widget centred on that
-    ;; starts at 453. y clears the 24px bar.
-    geometry :x "453px"
-             :y "30px"
-             :width "460px"
-             :height "160px"
+  (defwindow music-widget
+    :monitor 0
+    :geometry (
+      ;; Centred under the bar: the panel is 1366 wide, the media module is in
+      ;; modules-center so it sits at x=683, and a 460px widget centred on that
+      ;; starts at 453.
+      ;; :y is relative to waybar's exclusive zone (measured: rendered y = :y + 26),
+      ;; so :y "0px" lands the widget at y=26 — 1px below the 24px bar.
+      geometry :x "453px"
+               :y "0px"
+               :width "460px"
+               :height "160px"
   )
   :wm-ignore true
   (music-widget)
