@@ -339,12 +339,17 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 local winRegion =
 	[==[hyprctl -j activewindow | jq -r 'if .size then "\(.size[0])x\(.size[1])+\(.at[0])+\(.at[1])" else "" end']==]
 hl.bind("ALT + Print", hl.dsp.exec_cmd('grim -g "$(echo ' .. winRegion .. ')" - | wl-copy'))
--- Interactive screenshot. This was Super+P, but that key was bound to
--- hypr3d.toggle, which silently did nothing because the plugin isn't installed
--- (and has since left the AUR). Flameshot was installed but unbound.
--- -c copies the capture to the clipboard, -s accepts the selection immediately,
--- so there is no post-capture window to dismiss (and nothing to forget pressing).
-hl.bind("SUPER + P", hl.dsp.exec_cmd("flameshot gui -c -s"))
+-- Screenshots. Super+P was bound to hypr3d.toggle, which silently did nothing
+-- because the plugin isn't installed (and has since left the AUR).
+-- hyprshot is a shell script built for Hyprland and copies to the clipboard
+-- automatically, unlike flameshot (a 73MB Qt app that needs Ctrl+C pressed).
+-- Screenshots: slurp + grim, no daemon (~0 MB idle). Each one lands on the
+-- clipboard AND saves to ~/Pictures/Screenshots, then notifies via mako.
+-- NOTE: in this Lua API an uppercase letter in a key string means Shift is part
+-- of the binding, so these use lowercase "p"/"v".
+hl.bind("SUPER + p", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot region"))
+hl.bind("SHIFT + Print", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot full"))
+hl.bind("SUPER + v", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot window"))
 
 hl.bind(
 	"XF86AudioRaiseVolume",

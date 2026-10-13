@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# Screenshot helper. Uses slurp + grim (no daemon, ~0 MB idle), copies the
+# image to the clipboard AND saves it under ~/Pictures/Screenshots.
+#
+#   screenshot region      drag a rectangle with slurp, then capture it
+#   screenshot full        whole screen, no selection
+#   screenshot window      the focused window's region
+#
+# Bound in hyprland.lua: Super+P = region, Shift+Print = full,
+# Alt+Print = focused window. Notifies via notify-send (mako).
+
+set -uo pipefail
+
+DIR="$HOME/Pictures/Screenshots"
+mkdir -p "$DIR"
+
+mode="${1:-region}"
+file="$DIR/Screenshot-$(date +%F_%H-%M-%S).png"
+
+case "$mode" in
+    region)
+        geo=$(slurp) || exit 1
+        [[ -z $geo ]] && exit 0
+        shot=(grim -g "$geo" -)
+        label="region"
+        ;;
+    full)
+        shot=(grim -)
+        label="whole screen"
+        ;;
+    window)
+        geo=$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')
+        [[ -z $geo || $geo == "null" ]] && exit 1
+        shot=(grim -g "$geo" -)
+        label="window"
+        ;;
+    *)
+        echo "usage: screenshot [region|full|window]" >&2
+        exit 1
+        ;;
+esac
+
+# Capture -> clipboard, then write the clipboard back out to a file, so the
+# image is both on the clipboard and saved.
+"${shot[@]}" | wl-copy || exit 1
+sleep 0.2
+wl-paste --type image/png > "$file" 2>/dev/null
+
+notify-send "Screenshot captured" "$label → $(basename "$file")" -t 1500
+printf '%s\n' "$file"
