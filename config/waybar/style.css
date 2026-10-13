@@ -1,5 +1,5 @@
-/* One long island: the whole bar is a single black pill, modules are just
-   sections inside it. AMOLED, so black on black with one light accent. */
+/* Floating islands: the bar itself is transparent, each module is its own black
+   pill. AMOLED, so black on black with one light accent for text. */
 
 @import "colors.css";
 
@@ -14,24 +14,22 @@
 }
 
 window#waybar {
-    background: @base;
+    background: transparent;
     color: @text;
-    border-radius: 0;
-    box-shadow: none;
 }
 
 tooltip {
     background: @base;
     border: 1px solid @bg3;
     color: @text;
+    border-radius: 8px;
 }
 
 tooltip label {
     color: @text;
 }
 
-/* Modules sit inside the shared island: only horizontal padding, no
-   backgrounds, no gaps. */
+/* Every module is a separate island. */
 #workspaces,
 #mpris,
 #clock,
@@ -40,9 +38,14 @@ tooltip label {
 #battery,
 #custom-mako,
 #custom-power {
-    background: transparent;
-    padding: 0 8px;
-    margin: 0;
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin: 0 4px;
+}
+
+#workspaces {
+    margin: 0 4px;
 }
 
 #workspaces button {
@@ -51,6 +54,7 @@ tooltip label {
     background: transparent;
     color: @text;
     border: 1px solid transparent;
+    border-radius: 6px;
     margin: 0 1px;
 }
 
@@ -58,17 +62,35 @@ tooltip label {
     background-color: @text;
     color: @base;
     min-width: 22px;
+    border-radius: 6px;
 }
 
-/* Hover feedback so the single island still feels interactive. */
-#pulseaudio:hover,
-#backlight:hover,
-#battery:hover,
-#custom-mako:hover,
-#custom-power:hover {
-    background: @island_hover;
+/* Tight cluster on the right: volume, brightness and battery sit almost
+   against each other, with more air around mako, power and the clock. */
+#pulseaudio,
+#backlight,
+#battery {
+    margin: 0 1px;
+}
+
+#custom-mako,
+#custom-power {
+    margin: 0 1px;
+}
+
+#custom-mako {
+    margin-left: 6px;
+}
+
+#custom-power {
+    margin-right: 6px;
 }
 
 #clock {
     font-weight: 800;
 }
+
+#mpris {
+    margin: 0 8px;
+}
+
