@@ -15,8 +15,10 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd(home .. "/.local/bin/at_startup")
 end)
 
-hl.env("XCURSOR_SIZE", "24")
-hl.env("HYPRCURSOR_SIZE", "24")
+hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
+hl.env("XCURSOR_SIZE", "22")
+hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Ice")
+hl.env("HYPRCURSOR_SIZE", "22")
 hl.env("SHELL", "/usr/bin/zsh")
 
 -- Theme colours, generated into theme.lua by the theme switcher.
