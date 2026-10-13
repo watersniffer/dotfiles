@@ -228,8 +228,6 @@ hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scr
 if hl.plugin.hypr3d then
 	local hypr3d = hl.plugin.hypr3d
 
-	hl.bind("SUPER + P", hypr3d.toggle)
-
 	hypr3d.config({
 		world = {
 			grid = true,
@@ -341,6 +339,10 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 local winRegion =
 	[==[hyprctl -j activewindow | jq -r 'if .size then "\(.size[0])x\(.size[1])+\(.at[0])+\(.at[1])" else "" end']==]
 hl.bind("ALT + Print", hl.dsp.exec_cmd('grim -g "$(echo ' .. winRegion .. ')" - | wl-copy'))
+-- Interactive screenshot. This was Super+P, but that key was bound to
+-- hypr3d.toggle, which silently did nothing because the plugin isn't installed
+-- (and has since left the AUR). Flameshot was installed but unbound.
+hl.bind("SUPER + P", hl.dsp.exec_cmd("flameshot gui"))
 
 hl.bind(
 	"XF86AudioRaiseVolume",
