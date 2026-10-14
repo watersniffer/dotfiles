@@ -2,37 +2,48 @@
 //
 // Media player widget for the waybar mpris module.
 //
-// Replaces the old eww music widget, using https://github.com/GTGalaxi/qsMediaPlayer
-// (a single self-contained MediaPlayer.qml) embedded in a wrapper that adds the
-// three things the raw component does not do:
+// Built on https://github.com/GTGalaxi/qsMediaPlayer (a single self-contained
+// MediaPlayer.qml) and wrapped in two layer-shell windows:
 //
-//  1. A WINDOW. MediaPlayer.qml is a bare Item, so it needs a PanelWindow to live
-//     on screen.
+//  * TRIGGER - always visible, fully transparent, sitting over the bar in the
+//    column above the card. This is what makes hover work at all: the card's own
+//    window is destroyed when hidden, so it cannot be the thing that re-opens it.
 //
-//  2. CENTRING. Anchored to the top and given margins.left, because anchoring
-//     left+right as well makes a PanelWindow stretch between the margins and
-//     ignore the content's width. 473 = (1366 - 420) / 2, which is also where
-//     the old eww widget sat, so it lines up under the mpris module.
+//  * CARD - the visible widget. Appears on hover, disappears when hover is gone
+//    from BOTH the trigger and the card.
 //
-//  3. OPEN/CLOSE ANIMATION. A PanelWindow is a Window, not an Item, so it has no
-//     opacity/x/y to animate - the animation lives on `slideHost`, an inner Item.
-//     opacity (fade), scale (OutBack pop) and y (slides down from the bar) all
-//     animate together.
+// WHY HOVER EVENTS AND NOT A POLL
+// -------------------------------
+// The obvious approach is to poll the cursor and test it against two rectangles.
+// That costs ~8.7ms per `hyprctl cursorpos` call on this machine (measured over
+// 50 calls), so even 10Hz would burn ~9% of a core - unacceptable on the i5.
+// A long-lived polling loop does not help, because the cost is hyprctl's own
+// runtime, not the fork.
 //
-// TOGGLE
-// ------
-// ~/.local/bin/music-widget-toggle flips a one-byte state file, read here by a
-// long-running `tail -f` Process. This replaced two earlier approaches that both
-// failed on this Quickshell build (0.3.2 from Arch):
+// Quickshell's Hyprland module exposes no cursor position either (its qmltypes is
+// an empty stub), so there is nothing native to read. Qt's HoverHandler is
+// event-driven and costs nothing, so that is what this uses.
 //
-//   * FileView + watchChanges - verified broken: loaded=true and text() returned
-//     the right value, but writing to the file externally never triggered a
-//     re-read. It only tracks its own writes.
-//   * start/stop the process - worked, but Quickshell needs ~15s to bring this up,
-//     so the widget appeared slowly and with no animation at all, because a brand
-//     new window just pops into existence.
+// The trigger strip does cover waybar's mpris module, which means clicks there
+// land on us rather than waybar. That is fine - hover replaced the need to click
+// to open, and the module's only click action was our own toggle anyway.
 //
-// A persistent process makes the toggle instant and lets the animation run.
+// A NOTE ON THE NUMBERS IN HERE
+// -----------------------------
+// Every size and offset below is divided by 0.9 on purpose. Quickshell requests
+// a surface size/position and Hyprland commits exactly 0.9x that, for both
+// position and extent - verified across four independent requests (420->378,
+// 378->340, 380->342, 30->27, all 0.9000) and on margins (570->513, 568->511,
+// 549->494, all 0.9000). So the literal-looking 422 and 548 below are really
+// "380 and 493", which is what centres the card on the 1366px panel.
+//
+// Separately, the bar reserves the top 26px (`hyprctl monitors` shows
+// `reserved: 0 26 0 0`), which pushes any top-anchored layer surface down to
+// y=26. That is why the trigger needs a negative top margin to sit over the bar
+// rather than under it.
+//
+// To move or resize the card, change the LOGICAL number you want and divide by
+// 0.9, then confirm with `hyprctl layers | grep quickshell`.
 
 import QtQuick
 import Quickshell
@@ -43,24 +54,28 @@ import "MediaPlayer.qml"
 ShellRoot {
     id: root
 
-    // XDG_RUNTIME_DIR, not UID: UID is a shell *variable*, not an environment
-    // variable, so Quickshell.env("UID") returns "" and the read silently
-    // fails. XDG_RUNTIME_DIR is exported and is always correct.
     readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000")
                                          + "/music-widget-open"
-    readonly property bool open: state === "1"
 
+    // Hover state of the two zones.
+    property bool hoverTrigger: false
+    property bool hoverCard: false
+
+    // Click pin. The state file is still watched so the waybar mpris click (which
+    // runs ~/.local/bin/music-widget-toggle) keeps working as a "pin it open"
+    // control. Hover alone would be enough, but the pin is a useful fallback if
+    // the trigger strip ever ends up misaligned with the module.
     property string state: "0"
+    readonly property bool pinned: state === "1"
 
-    // Follow the toggle file.
+    property bool hovering: hoverTrigger || hoverCard
+    readonly property bool open: pinned || hovering
+
+    // Follow the pin file.
     //
     // A one-shot `cat` on a timer, NOT `tail -f`. StdioCollector signals
     // onStreamFinished when the stream ENDS, so a long-running tail never fires
-    // it - that is why a tail-based watcher loaded fine but never updated the
-    // state. Restarting a short-lived Process each tick does fire it.
-    //
-    // 250ms interval is ~4 tiny spawns per second and only while a player is
-    // running, which is far cheaper than the 15s restart this replaced.
+    // it. Restarting a short-lived Process each tick does fire it.
     Process {
         id: poll
         running: true
@@ -83,6 +98,68 @@ ShellRoot {
         }
     }
 
+    // A short grace period so travelling from the bar down onto the card - or
+    // between the two - does not flash the widget closed mid-movement.
+    Timer {
+        id: hideGrace
+        interval: 220
+        onTriggered: root.hoverTrigger = false
+    }
+
+    Connections {
+        target: root
+        function onHoveringChanged() {
+            if (root.hovering)
+                hideGrace.stop();
+            else
+                hideGrace.restart();
+        }
+    }
+
+    // ---------------------------------------------------------------- trigger
+    // Invisible, always-on trigger strip over the bar, in the column the card
+    // hangs below. 380 wide covers the mpris module and the card beneath it.
+    PanelWindow {
+        id: trigger
+
+        visible: true
+
+        anchors.top: true
+        anchors.left: true
+        margins.left: 548
+        // Negative: the bar reserves the top 26px, which pushes a top-anchored
+        // layer surface below it. Without this the trigger would sit under the
+        // bar instead of over it, and hovering the module would never hit it.
+        margins.top: -29
+
+        // Floating overlay: reserve no space, or Hyprland would shove every
+        // tiled window out of the way.
+        exclusiveZone: -1
+
+        implicitWidth: 422
+        implicitHeight: 33
+
+        color: "transparent"
+
+        // A Rectangle, not a bare Item: only visual items report implicitWidth/
+        // implicitHeight, and PanelWindow commits to the content's implicit size.
+        // A plain Item here collapses the trigger to a few stray pixels.
+        Rectangle {
+            width: 422
+            height: 33
+            color: "transparent"
+
+            HoverHandler {
+                id: triggerHover
+                onHoveredChanged: {
+                    root.hoverTrigger = hovered;
+                    if (hovered) hideGrace.stop();
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------- card
     PanelWindow {
         id: win
 
@@ -90,66 +167,72 @@ ShellRoot {
 
         anchors.top: true
         anchors.left: true
-        // Centre on the 1366px panel.
-        //
-        // Calibrated against `hyprctl layers`, not arithmetic. Two wrinkles:
-        //   * margins.left is NOT the surface x - Hyprland reports x = margin - 57.
-        //   * the committed surface is 340 wide, not the 378 requested below.
-        //     Neither implicitWidth nor width reaches the committed size on this
-        //     build; the window auto-sizes to the card's content (320 implicit
-        //     plus the 12px cycle-arrow overhang on each side).
-        // 570 is therefore what puts the 340px card at x=513: centre 683.
-        margins.left: 570
-        margins.top: 28
+        margins.left: 548
+        margins.top: 4
 
-        // This widget floats OVER the desktop. Without this, Hyprland gives the
-        // surface an exclusive zone and reserves that space, which shoves every
-        // tiled window down/out of the way - the "it pushes the windows away"
-        // report. -1 means reserve nothing.
         exclusiveZone: -1
 
-        // These are advisory; see the note above about the committed size.
-        implicitWidth: 378
-        width: 378
-        implicitHeight: card.implicitHeight
+        implicitWidth: 422
+        implicitHeight: 138
         color: "transparent"
 
         Item {
             id: slideHost
-            anchors.fill: parent
+            // Explicit, not anchors.fill: PanelWindow commits to its content's
+            // size, and a content Item that only anchors.fill collapses.
+            width: 422
+            height: 138
+
             opacity: root.open ? 1 : 0
-            y: root.open ? 0 : -18
+            y: root.open ? 0 : -14
+
+            // Spring physics rather than fixed-duration easing. Quickshell's
+            // SpringAnimation carries velocity across interruptions, so a
+            // reversal mid-flight continues smoothly instead of restarting, and
+            // it is frame-rate independent rather than tied to a duration.
+            property real pop: root.open ? 1 : 0.92
 
             transform: Scale {
                 origin.x: slideHost.width / 2
-                origin.y: 0
-                xScale: root.open ? 1 : 0.94
-                yScale: root.open ? 1 : 0.94
-
-                Behavior on xScale {
-                    NumberAnimation {
-                        duration: root.open ? 300 : 150
-                        easing.type: Easing.OutBack
-                    }
-                }
-                Behavior on yScale {
-                    NumberAnimation {
-                        duration: root.open ? 300 : 150
-                        easing.type: Easing.OutBack
-                    }
-                }
+                origin.y: slideHost.height / 2
+                xScale: slideHost.pop
+                yScale: slideHost.pop
             }
 
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: root.open ? 200 : 130
-                    easing.type: Easing.OutCubic
-                }
+            SpringAnimation {
+                target: slideHost
+                property: "pop"
+                spring: 3.4
+                damping: 0.58
+                mass: 0.7
             }
-            Behavior on y {
-                NumberAnimation {
-                    duration: root.open ? 240 : 130
-                    easing.type: Easing.OutCubic
+
+            SpringAnimation {
+                target: slideHost
+                property: "opacity"
+                spring: 4.2
+                damping: 0.85
+                mass: 0.7
+            }
+
+            SpringAnimation {
+                target: slideHost
+                property: "y"
+                spring: 3.2
+                damping: 0.62
+                mass: 0.7
+            }
+
+            Rectangle {
+                width: 380
+                height: 124
+                color: "transparent"
+                HoverHandler {
+                    id: cardHover
+                    onHoveredChanged: {
+                        root.hoverCard = hovered;
+                        if (hovered) hideGrace.stop();
+                    }
                 }
             }
 
@@ -158,29 +241,26 @@ ShellRoot {
             // MediaPlayer.qml declares a `backgroundColor` property and then
             // never uses it - upstream draws no background rectangle anywhere,
             // because it is designed as a transparent floating widget. So the
-            // theme colours we pass in below only affect text/icons/buttons and
-            // the widget renders see-through.
+            // theme colours passed to the card only affect text/icons/buttons.
             //
             // The fix lives here rather than in the vendored file so
             // MediaPlayer.qml stays a byte-for-byte copy of upstream and can be
             // re-fetched with a plain curl.
             Rectangle {
-                anchors.fill: parent
-                radius: 12
-                color: "#0b0b11"          // @base
+                width: 380
+                height: 124
+                radius: 14
+                color: "#0b0b11"           // @base
                 border.width: 1
-                border.color: "#1c1c24"    // hairline, keeps the edge visible on a dark wallpaper
+                border.color: "#1c1c24"
             }
 
             // AMOLED palette, matching ~/.config/waybar/colors.css:
             //   @base #0b0b11   @text #bfbcc7   @subtext #85838b
             MediaPlayer {
                 id: card
-
-                // The component's children anchor to `parent.left`/`parent.right`,
-                // but it never sets its own width, so as a plain Item it would
-                // lay out at 0 and render nothing.
-                width: 378
+                anchors.centerIn: parent
+                width: 340
 
                 backgroundColor: "#0b0b11"
                 foregroundColor: "#bfbcc7"
@@ -190,7 +270,7 @@ ShellRoot {
                 surfaceColor:    "#121219"
                 hoverColor:      "#1e1e26"
                 badgeColor:      "#0b0b11"
-                badgeBorder:      "#2a2a34"
+                badgeBorder:    "#2a2a34"
                 volumeColor:     "#bfbcc7"
                 cornerRadius: 12
             }
