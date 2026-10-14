@@ -168,12 +168,15 @@ ShellRoot {
         anchors.top: true
         anchors.left: true
         margins.left: 548
-        margins.top: 4
+        // 0, not 4: the bar's 26px reserved zone already places the card at
+        // y=26, flush under the bar. Any extra margin leaves a seam the cursor
+        // crosses and the widget closes.
+        margins.top: 0
 
         exclusiveZone: -1
 
         implicitWidth: 422
-        implicitHeight: 138
+        implicitHeight: 169
         color: "transparent"
 
         Item {
@@ -181,58 +184,69 @@ ShellRoot {
             // Explicit, not anchors.fill: PanelWindow commits to its content's
             // size, and a content Item that only anchors.fill collapses.
             width: 422
-            height: 138
+            height: 169
 
             opacity: root.open ? 1 : 0
-            y: root.open ? 0 : -14
+            y: root.open ? 0 : -34
 
+            // The card emerges from its top-right corner rather than fading in
+            // place: it starts small, drops in, and overshoots slightly on the
+            // way. Origin is pinned to a corner so the growth reads as unfolding
+            // out of that point.
+            //
             // Spring physics rather than fixed-duration easing. Quickshell's
             // SpringAnimation carries velocity across interruptions, so a
             // reversal mid-flight continues smoothly instead of restarting, and
             // it is frame-rate independent rather than tied to a duration.
-            property real pop: root.open ? 1 : 0.92
+            property real pop: root.open ? 1 : 0.55
 
             transform: Scale {
-                origin.x: slideHost.width / 2
-                origin.y: slideHost.height / 2
+                origin.x: slideHost.width
+                origin.y: 0
                 xScale: slideHost.pop
                 yScale: slideHost.pop
             }
 
-            SpringAnimation {
-                target: slideHost
-                property: "pop"
-                spring: 3.4
-                damping: 0.58
-                mass: 0.7
+            // NOTE: this uses Behavior + NumberAnimation, not Quickshell's
+            // SpringAnimation. A SpringAnimation on a property that also has a
+            // binding takes ownership of the property and loses the binding it
+            // needed as its target, so it never moves - verified by sampling
+            // `pop` every frame: it sat at 0.550 for the whole open transition
+            // while `open` was true. Behavior animates binding-driven changes
+            // correctly, and Easing.OutBack supplies the snappy overshoot.
+            Behavior on pop {
+                NumberAnimation {
+                    duration: 340
+                    easing.type: Easing.OutBack
+                    easing.overshoot: 2.1
+                }
             }
 
-            SpringAnimation {
-                target: slideHost
-                property: "opacity"
-                spring: 4.2
-                damping: 0.85
-                mass: 0.7
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 170
+                    easing.type: Easing.OutCubic
+                }
             }
 
-            SpringAnimation {
-                target: slideHost
-                property: "y"
-                spring: 3.2
-                damping: 0.62
-                mass: 0.7
+            Behavior on y {
+                NumberAnimation {
+                    duration: 300
+                    easing.type: Easing.OutCubic
+                }
             }
 
-            Rectangle {
-                width: 380
-                height: 124
-                color: "transparent"
-                HoverHandler {
-                    id: cardHover
-                    onHoveredChanged: {
-                        root.hoverCard = hovered;
-                        if (hovered) hideGrace.stop();
-                    }
+            // Hover lives on slideHost itself, NOT on a separate transparent
+            // Rectangle declared here. A sibling declared before the background
+            // and the card sits underneath them in z-order, so it never receives
+            // hover - which made the widget vanish the instant the cursor left
+            // the bar. A handler on the parent still fires with children on top,
+            // and the card's own buttons keep their clicks.
+            HoverHandler {
+                id: cardHover
+                onHoveredChanged: {
+                    root.hoverCard = hovered;
+                    if (hovered) hideGrace.stop();
                 }
             }
 
@@ -247,8 +261,10 @@ ShellRoot {
             // MediaPlayer.qml stays a byte-for-byte copy of upstream and can be
             // re-fetched with a plain curl.
             Rectangle {
-                width: 380
-                height: 124
+                // Must track slideHost's size, or the opaque fill stops
+                // covering the window and the card shows a transparent rim.
+                width: 422
+                height: 169
                 radius: 14
                 color: "#0b0b11"           // @base
                 border.width: 1
