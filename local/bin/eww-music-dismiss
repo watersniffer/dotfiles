@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# Dismiss the eww music widget: called by the invisible click-catcher surface
+# that sits underneath the widget, so ANY click outside the widget closes it
+# (normal dropdown behaviour) instead of needing a second click on the exact
+# waybar media module.
+
+set -uo pipefail
+
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+: "${WAYLAND_DISPLAY:=wayland-1}"
+export XDG_RUNTIME_DIR WAYLAND_DISPLAY
+
+CONFIG="$HOME/.config/eww"
+
+# Close the catcher first: it is underneath, so leaving it up would keep eating
+# every click on the rest of the desktop.
+eww -c "$CONFIG" close click-catcher >/dev/null 2>&1
+eww -c "$CONFIG" close music-widget >/dev/null 2>&1
+
+exit 0

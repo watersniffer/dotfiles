@@ -192,3 +192,11 @@ $padding: 16px;
   color: #d7d6df;
   background-color: #1a1a1a;
 }
+
+;; The catcher must be invisible but still have a painted region, so GTK
+;; gives the surface a non-empty input region and it can receive the click.
+;; 0.001 alpha is imperceptible - a fully transparent surface can end up with
+;; an empty input region and swallow nothing.
+.click-catcher {
+    background-color: rgba(0, 0, 0, 0.001);
+}

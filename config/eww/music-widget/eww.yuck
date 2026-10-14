@@ -91,6 +91,39 @@
                :width "460px"
                :height "160px"
   )
+  ;; NOT focusable. Being focusable would let this surface take the keyboard away
+  ;; from whatever window you are actually working in; dismissal is handled by the
+  ;; click-catcher underneath instead. Pointer events are delivered to layer
+  ;; surfaces regardless of keyboard interactivity.
   :wm-ignore true
   (music-widget)
 )
+
+;; --- Click-away catcher ---------------------------------------------------
+;;
+;; A transparent full-screen surface that sits UNDERNEATH the music widget while
+;; it is open. Every click that is not on the widget lands here instead of
+;; falling through to the app behind, which is what makes the widget behave like
+;; a normal dropdown: click anywhere to dismiss.
+;;
+;; It must be opened BEFORE music-widget so it ends up lower in the stacking
+;; order; eww-music-toggle enforces that ordering, and closes this window again
+;; whenever the widget is dismissed.
+;;
+;; :focusable false is deliberate - a focusable full-screen surface would steal
+;; the keyboard from the window you are actually working in. Pointer events are
+;; delivered to layer surfaces regardless of keyboard interactivity.
+
+  (defwindow click-catcher
+    :monitor 0
+    :geometry (
+      geometry :x "0px"
+               :y "0px"
+               :width "100%"
+               :height "100%"
+    )
+    :wm-ignore true
+    :focusable false
+    (box :class "click-catcher"
+         :onclick "bash $HOME/.local/bin/eww-music-dismiss")
+  )

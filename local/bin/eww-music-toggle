@@ -37,9 +37,28 @@ if [[ $(listeners) -eq 0 ]]; then
 fi
 
 # --- toggle --------------------------------------------------------------
+#
+# Two windows are involved: an invisible full-screen click-catcher underneath
+# the widget, and the widget itself. The ORDER matters - eww stacks same-layer
+# surfaces in the order they were opened, so the catcher must be opened first to
+# end up underneath. Closing both before each open guarantees that ordering even
+# after an odd number of open/close cycles.
+#
+# Opening both in the background (&) matters too: eww's `open` blocks until the
+# window's scripts have started, and the cava listener takes a moment.
+
+CATCHER="click-catcher"
+
 if eww -c "$CONFIG" active-windows 2>/dev/null | grep -q ": ${WINDOW}\$"; then
-    eww -c "$CONFIG" close "$WINDOW" 2>/dev/null
+    # Widget is up -> dismiss both.
+    bash "$HOME/.local/bin/eww-music-dismiss" 2>/dev/null
 else
-    eww -c "$CONFIG" open "$WINDOW" >/dev/null 2>&1 &
+    # Reset stacking order, then open catcher first, widget second.
+    eww -c "$CONFIG" close "$CATCHER" >/dev/null 2>&1
+    eww -c "$CONFIG" close "$WINDOW" >/dev/null 2>&1
+
+    ( eww -c "$CONFIG" open "$CATCHER" >/dev/null 2>&1
+      sleep 0.35
+      eww -c "$CONFIG" open "$WINDOW" >/dev/null 2>&1 ) &
     disown 2>/dev/null
 fi
