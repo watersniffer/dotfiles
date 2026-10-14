@@ -390,7 +390,12 @@ hl.on("hyprland.start", function()
 			.. "/Pictures/Wallpapers/a_river_running_through_a_small_town.jpg"
 	)
 
-	hl.exec_cmd(home .. "/.local/bin/clipboard-watcher")
+	-- Clipboard ownership + history. These used to be started from here, but
+	-- the referenced script never existed (only clipboard-history does), so the
+	-- line failed silently on every login and nothing held the clipboard.
+	-- The real services are systemd units and are enabled at boot; starting them
+	-- here as well is harmless and makes a fresh login work without a re-login.
+	hl.exec_cmd("systemctl --user start cliphist.service cliphist-store.service 2>/dev/null; true")
 
 	-- Session services.
 	hl.exec_cmd("nm-applet")
