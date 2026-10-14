@@ -1,31 +1,24 @@
 //@ pragma UseQApplication
 //
-// Media player widget for the waybar mpris module.
+// Media player: a bar module that expands into the player on hover.
 //
 // Built on https://github.com/GTGalaxi/qsMediaPlayer (a single self-contained
-// MediaPlayer.qml) plus two layer-shell windows.
+// MediaPlayer.qml).
 //
-// WHY TWO WINDOWS, AND WHY THE TRIGGER IS THE BIG ONE
-// ---------------------------------------------------
-// The card is its own window because it has to be clickable - the player cycle
-// arrows and dots live on it.
+// ONE SURFACE, NOT TWO
+// --------------------
+// Earlier versions used two windows - a transparent trigger strip over the bar
+// and the card below - and hover was unreliable. The cause was structural, not
+// a tuning problem: the card was stacked ABOVE the trigger and covered the same
+// column, so past the boundary the card surface was what sat under the pointer
+// and the trigger's surface received nothing. Every arrangement of "hover the
+// bar to open, hover the card to keep open" across two surfaces had to survive
+// that handover, and it never did.
 //
-// The hover handling is deliberately NOT shared with the card. An earlier
-// version gave the card its own HoverHandler and relied on handing hover over
-// when the cursor moved down off the bar. That handoff never completed: the
-// cursor left the trigger, the card had not yet reported being hovered, so
-// `hovering` went false and the widget closed - it was impossible to reach.
-//
-// So the trigger spans the ENTIRE column, bar down past the bottom of the card,
-// and the widget stays open while EITHER window is hovered. Both surfaces must
-// report hover: the card is stacked above the trigger and covers the same
-// column, so past y=26 the card is the surface under the pointer and the
-// trigger sees nothing. Trusting the trigger alone is what made the widget
-// "close early" the moment you crossed onto the card.
-//
-// While the card is closed the trigger is masked down to the bar strip, so the
-// invisible part of the window does not swallow clicks meant for the desktop or
-// for whatever window is underneath.
+// So there is now only one window, and it replaces waybar's mpris module
+// outright. The collapsed pill IS the widget: you hover the thing itself, there
+// is no proxy, no seam and no handover to lose. Hovering reveals the player
+// underneath; the pill stays put, like any other bar module.
 //
 // WHY HOVER EVENTS AND NOT A POLL
 // -------------------------------
@@ -42,240 +35,220 @@
 // position and extent - verified across four independent requests (420->378,
 // 378->340, 380->342, 30->27, all 0.9000) and on margins (570->513, 568->511,
 // 549->494, all 0.9000). So the literal-looking 422 and 548 below are really
-// "380 and 493", which is what centres the card on the 1366px panel.
+// "380 and 493", which is what centres this on the 1366px panel.
 //
-// Separately, the bar reserves the top 26px (`hyprctl monitors` shows
-// `reserved: 0 26 0 0`), which pushes any top-anchored layer surface down to
-// y=26. That is why the trigger needs a negative top margin to start at y=0.
+// The bar also reserves the top 26px (`hyprctl monitors` shows
+// `reserved: 0 26 0 0`), which floors any top-anchored layer surface at y=26.
+// The negative top margin is what lifts the window above that floor so the pill
+// can sit on the bar at y=1.
 //
 // To move or resize things, change the LOGICAL number you want and divide by
 // 0.9, then confirm with `hyprctl layers | grep quickshell`.
 
 import QtQuick
 import Quickshell
-import Quickshell.Io
 import Quickshell.Services.Mpris
 import "MediaPlayer.qml"
 
 ShellRoot {
     id: root
 
-    readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000")
-                                         + "/music-widget-open"
-
-    // Hover state. BOTH windows report in, and the widget stays open while
-    // either is hovered.
-    //
-    // This is essential, not belt-and-braces: the card is stacked ABOVE the
-    // trigger and covers the same column, so the moment the cursor crosses
-    // y=26 the card surface is the one under the pointer and the trigger's
-    // surface stops receiving events entirely. An earlier version gave hover to
-    // the trigger alone and the widget therefore closed the instant you
-    // crossed onto the card - from the user's side, "it closes early".
-    property bool hoverTrigger: false
+    // Click pins the player open; hover is transient. Pinning lives in memory
+    // only - the state file that used to back it is gone, because waybar's mpris
+    // module (which was what invoked the toggle script) no longer exists.
     property bool hoverCard: false
+    property bool pinned: false
+    readonly property bool open: pinned || hoverCard
 
-    // Click pin. The state file is still watched so the waybar mpris click (which
-    // runs ~/.local/bin/music-widget-toggle) keeps working as a "pin it open"
-    // control.
-    property string state: "0"
-    readonly property bool pinned: state === "1"
-
-    readonly property bool hovering: hoverTrigger || hoverCard
-    readonly property bool open: pinned || hovering
-
-    // Safety net for the handover between the two surfaces. Both handlers
-    // normally report in the same event batch, but if one lags, this keeps the
-    // widget up long enough to bridge it.
-    Timer {
-        id: hideGrace
-        interval: 260
-        onTriggered: root.hoverTrigger = false
+    readonly property var player: {
+        var p = Mpris.players.values;
+        return p.length > 0 ? p[0] : null;
     }
 
-    Connections {
-        target: root
-        function onHoveringChanged() {
-            if (root.hovering)
-                hideGrace.stop();
-            else
-                hideGrace.restart();
-        }
-    }
-
-    // Follow the pin file.
-    //
-    // A one-shot `cat` on a timer, NOT `tail -f`. StdioCollector signals
-    // onStreamFinished when the stream ENDS, so a long-running tail never fires
-    // it. Restarting a short-lived Process each tick does fire it.
-    Process {
-        id: poll
-        running: true
-        command: ["cat", root.statePath]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var t = String(text).trim();
-                if (t !== "") root.state = t;
-            }
-        }
-    }
-
-    Timer {
-        interval: 250
-        running: true
-        repeat: true
-        onTriggered: {
-            poll.running = false;
-            poll.running = true;
-        }
-    }
-
-    // ---------------------------------------------------------------- trigger
-    // Declared FIRST so the card is stacked above it: the card takes clicks,
-    // this takes hover.
     PanelWindow {
-        id: trigger
+        id: win
 
         visible: true
 
         anchors.top: true
         anchors.left: true
-        margins.left: 548
 
-        // Negative: the bar reserves the top 26px, which pushes a top-anchored
-        // layer surface down to y=26. Without this the trigger would start under
-        // the bar instead of over it, and hovering the module would never hit it.
+        // 493 logical: centres the 380-wide surface on the 1366px panel.
+        margins.left: 548
+        // Lifts the surface above the bar's 26px reserved zone so the pill can
+        // sit at y=1, flush with waybar.
         margins.top: -29
 
+        // Floating overlay: reserve no space, or Hyprland would shove every
+        // tiled window out of the way.
         exclusiveZone: -1
 
-        implicitWidth: 422
-        implicitHeight: 198      // logical 178: bar strip down past the card
+        implicitWidth: 422      // logical 380
+        implicitHeight: 198     // logical 178: 28 for the pill, 170 for the card
 
         color: "transparent"
 
-        // Shrink the input region to just the bar strip while the card is
-        // closed, so the invisible remainder of this window does not eat clicks
-        // meant for the desktop.
+        // While collapsed the input region is just the pill, so the invisible
+        // card-shaped remainder does not swallow clicks meant for the desktop.
         //
-        // Uses `item`, NOT `regions`: Region.regions is read-only (isReadonly in
-        // the qmltypes, no setter), so binding to it is silently ignored. That
-        // left the region EMPTY, which makes a Wayland surface fully
-        // click-through - hover stopped working entirely and clicks fell through
-        // to waybar. Only `item` is writable.
+        // This uses `item`, NOT `regions`: Region.regions is read-only
+        // (isReadonly in the qmltypes, no setter), so binding to it is silently
+        // ignored, which leaves the region EMPTY and makes the surface fully
+        // click-through - hover dies and clicks fall through to whatever is
+        // underneath. Only `item` is writable.
         mask: Region {
-            item: root.open ? triggerFull : triggerStrip
+            item: root.open ? hitOpen : hitCollapsed
         }
 
         Rectangle {
-            id: triggerFull
-            width: 422
-            height: 198
+            id: hitCollapsed
+            x: 67
+            y: 0
+            width: 289
+            height: 28
             color: "transparent"
         }
 
         Rectangle {
-            id: triggerStrip
+            id: hitOpen
             x: 0
             y: 0
             width: 422
-            height: 33
+            height: 198
             color: "transparent"
         }
 
-        Item {
-            width: 422
-            height: 198
+        // ------------------------------------------------------------- pill
+        // The bar module itself: matches waybar's pill styling from
+        // ~/.config/waybar/style.css (@base background, radius 6, height 24).
+        Rectangle {
+            id: pill
+            x: 67
+            y: 1
+            width: 289
+            height: 27
+            radius: 6
+            color: "#0b0b11"           // @base, as waybar's pills
+            border.width: 1
+            border.color: "#1c1c24"
 
-            HoverHandler {
-                id: triggerHover
-                onHoveredChanged: {
-                    root.hoverTrigger = hovered;
-                    if (hovered) hideGrace.stop();
+            Row {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Rectangle {
+                    width: 16
+                    height: 16
+                    radius: 3
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: "#1c1c24"
+                    border.width: 1
+                    border.color: "#2a2a34"
+
+                    Text {
+                        anchors.centerIn: parent
+                        text: "♪"
+                        color: "#bfbcc7"   // @text
+                        font.pixelSize: 11
+                    }
+                }
+
+                Text {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - 24 - 10 - 8
+                    elide: Text.ElideRight
+                    color: "#bfbcc7"       // @text
+                    font.pixelSize: 12
+                    text: {
+                        if (!root.player || !root.player.metadata)
+                            return "No media";
+                        var a = root.player.metadata.artist || "";
+                        var t = root.player.metadata.title || "";
+                        if (a && t) return a + " - " + t;
+                        return t || a || "No media";
+                    }
+                }
+            }
+
+            // Reproduces what waybar's mpris module used to do, so removing
+            // that module did not quietly drop these bindings: left pins the
+            // player open, middle toggles playback, right skips, wheel is volume.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                cursorShape: Qt.PointingHandCursor
+
+                onClicked: function (mouse) {
+                    if (!root.player) return
+                    if (mouse.button === Qt.MiddleButton)
+                        root.player.togglePlaying();
+                    else if (mouse.button === Qt.RightButton)
+                        root.player.next();
+                    else
+                        root.pinned = !root.pinned;
+                }
+
+                onWheel: function (wheel) {
+                    if (!root.player || !root.player.volumeSupported) return
+                    var step = wheel.angleDelta.y > 0 ? 0.05 : -0.05;
+                    root.player.volume = Math.max(0, Math.min(1, root.player.volume + step));
                 }
             }
         }
-    }
 
-    // ------------------------------------------------------------------- card
-    PanelWindow {
-        id: win
-
-        visible: root.open
-
-        anchors.top: true
-        anchors.left: true
-        margins.left: 548
-
-        // 0, not a positive value: the bar's 26px reserved zone already places
-        // the card at y=26, flush under the bar. An extra margin leaves a seam
-        // the cursor crosses.
-        margins.top: 0
-
-        exclusiveZone: -1
-
-        implicitWidth: 422
-        implicitHeight: 169      // logical 152
-
-        color: "transparent"
-
+        // ------------------------------------------------------------- card
+        // The player, revealed under the pill on hover.
         Item {
-            id: slideHost
-            // Explicit, not anchors.fill: PanelWindow commits to its content's
-            // size, and a content Item that only anchors.fill collapses.
+            id: cardSlot
+            x: 0
+            y: 28
             width: 422
-            height: 169
+            height: 170
+
+          Item {
+            id: cardHost
+            width: 422
+            height: 170
 
             opacity: root.open ? 1 : 0
-            y: root.open ? 0 : -34
+            y: root.open ? 0 : -12
 
-            // The card emerges from the TOP CENTRE of its own box - directly
-            // under the bar it belongs to - scaling up from there while dropping
-            // in, with an OutBack overshoot for snap.
-            //
-            // This uses Behavior + NumberAnimation, NOT Quickshell's
-            // SpringAnimation. A SpringAnimation on a property that also has a
-            // binding takes ownership of the property and loses the binding it
-            // needed as its target, so it never moves - verified by sampling
-            // `pop` every frame: it sat at 0.550 for the whole open transition
-            // while `open` was true. Behavior animates binding-driven changes
-            // correctly. Easing.OutBack supplies the overshoot.
-            property real pop: root.open ? 1 : 0.55
+            property real pop: root.open ? 1 : 0.82
 
             transform: Scale {
-                origin.x: slideHost.width / 2
+                origin.x: cardHost.width / 2
                 origin.y: 0
-                xScale: slideHost.pop
-                yScale: slideHost.pop
+                xScale: cardHost.pop
+                yScale: cardHost.pop
             }
 
+            // Behavior + NumberAnimation, NOT Quickshell's SpringAnimation. A
+            // SpringAnimation on a property that also has a binding takes
+            // ownership of the property and loses the binding it needed as its
+            // target, so it never moves - verified by sampling `pop` every
+            // frame: it sat at 0.550 for the whole open transition while `open`
+            // was true. Behavior animates binding-driven changes correctly.
             Behavior on pop {
                 NumberAnimation {
-                    duration: 340
+                    duration: 300
                     easing.type: Easing.OutBack
-                    easing.overshoot: 2.1
+                    easing.overshoot: 1.9
                 }
             }
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: 170
+                    duration: 160
                     easing.type: Easing.OutCubic
                 }
             }
 
             Behavior on y {
                 NumberAnimation {
-                    duration: 300
+                    duration: 280
                     easing.type: Easing.OutCubic
-                }
-            }
-
-            HoverHandler {
-                id: cardHover
-                onHoveredChanged: {
-                    root.hoverCard = hovered;
-                    if (hovered) hideGrace.stop();
                 }
             }
 
@@ -290,10 +263,8 @@ ShellRoot {
             // MediaPlayer.qml stays a byte-for-byte copy of upstream and can be
             // re-fetched with a plain curl.
             Rectangle {
-                // Must track slideHost's size, or the opaque fill stops
-                // covering the window and the card shows a transparent rim.
                 width: 422
-                height: 169
+                height: 170
                 radius: 14
                 color: "#0b0b11"           // @base
                 border.width: 1
@@ -318,6 +289,22 @@ ShellRoot {
                 badgeBorder:    "#2a2a34"
                 volumeColor:     "#bfbcc7"
                 cornerRadius: 12
+            }
+          }
+        }
+
+        // One hover region for the whole surface - the pill and the card are the
+        // same window, so there is nothing to hand over.
+        Item {
+            id: hoverZone
+            x: 0
+            y: 0
+            width: 422
+            height: 198
+
+            HoverHandler {
+                id: hover
+                onHoveredChanged: root.hoverCard = hovered
             }
         }
     }

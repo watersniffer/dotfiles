@@ -13,8 +13,17 @@
     "spacing": 0,
     "height": 24,
 
-    "modules-left": ["hyprland/workspaces"],
-    "modules-center": ["wlr/taskbar", "mpris", "custom/cava"],
+    // The centre is deliberately EMPTY. The media player is now a Quickshell
+    // surface that lives here instead of waybar's mpris module: it renders the
+    // bar pill itself and expands into the player on hover, so it owns the
+    // centre on its own. Leaving a waybar module in the centre would just
+    // recentre on top of it.
+    //
+    // The taskbar moved to the left for that reason. The cava visualiser was
+    // dropped rather than relocated - it used to sit beside mpris, which no
+    // longer exists.
+    "modules-left": ["hyprland/workspaces", "wlr/taskbar"],
+    "modules-center": [],
     "modules-right": [
         "group/right"
     ],

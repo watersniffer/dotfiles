@@ -390,18 +390,16 @@ hl.on("hyprland.start", function()
 	-- Bar. Waybar is the bar again: DankMaterialShell was tried and removed
 	-- (it needed 1.3 GB RAM - unusable on this 8 GB machine), and the custom
 	-- The earlier custom Quickshell bar is kept at ~/.config/quickshell.
-	-- The music widget is no longer eww - see music-widget-toggle below.
+	-- The music widget is no longer eww - see below.
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
 	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
 	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
 	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
-	-- The eww music widget is replaced by the Quickshell music player. It is
-	-- started ONCE here and stays running; ~/.local/bin/music-widget-toggle
-	-- only flips a state file it watches, so opening it is instant.
-	-- quickshell-music-player2 (github.com/GTGalaxi/qsMediaPlayer) replaces
-	-- the eww music widget. Started ONCE here and left running;
-	-- ~/.local/bin/music-widget-toggle only flips a state file it watches,
-	-- so opening it is instant instead of paying a ~15s Quickshell start.
+	-- The music player is the Quickshell widget at
+	-- ~/.config/quickshell-music-player2. It draws its own pill in the centre of
+	-- the bar (replacing waybar's mpris module) and expands into the player on
+	-- hover, so it owns its own input: there is no toggle script and no state
+	-- file any more. Started ONCE here and left running.
 	hl.exec_cmd("pkill -9 -x quickshell 2>/dev/null; true")
 	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell-music-player2/shell.qml >/dev/null 2>&1 &")
 

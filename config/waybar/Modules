@@ -55,34 +55,11 @@
         "persistent-workspaces": { "*": 5 }
     },
 
-    "mpris": {
-        "interval": 10,
-        "format": "{player_icon} {dynamic}",
-        "format-paused": "{status_icon} {artist} {title}",
-        "on-click": "$HOME/.local/bin/music-widget-toggle",
-        "on-click-middle": "playerctl play-pause",
-        "on-click-right": "playerctl next",
-        "scroll-step": 5.0,
-        "on-scroll-up": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+",
-        "on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-",
-        "smooth-scrolling-threshold": 1,
-        "tooltip": true,
-        "tooltip-format": "{status_icon} {dynamic}",
-        "player-icons": {
-            "chromium": "",
-            "firefox": "",
-            "mpv": "󰐹",
-            "spotify": "",
-            "default": ""
-        },
-        "status-icons": {
-            "paused": "󰐎",
-            "playing": "",
-            "stopped": ""
-        },
-        "dynamic-order": ["artist", "title"],
-        "max-length": 40
-    },
+    // "mpris" was removed here: the player is now a Quickshell surface that
+    // draws its own bar pill and expands into the player on hover. Its
+    // middle-click, right-click and scroll bindings are reproduced in
+    // ~/.config/quickshell-music-player2/shell.qml.
+
     
     "wlr/taskbar": {
         "show-tabs": false,
