@@ -1,36 +1,39 @@
 #!/usr/bin/env bash
 #
 # Toggle the Quickshell music player (replaces the old eww music widget).
-# Bound to waybar's mpris module: clicking it opens the player, clicking again
-# closes it.
+# Bound to waybar's mpris module: click to open, click again to close.
 #
-# Why start/stop rather than a visibility toggle: Quickshell 0.3.2 as shipped by
-# Arch has no IpcHandler, so there is no way to tell a running shell to show or
-# hide a window. FileView.watchChanges was tried first and did not resolve in
-# practice. Starting and stopping is unambiguous and costs nothing while hidden,
-# because a hidden quickshell creates no layer surface at all.
+# This only flips a one-byte state file that the player's shell.qml watches with
+# FileView.watchChanges. It does NOT start or stop quickshell.
 #
-# The window only appears when MUSIC_WIDGET_OPEN=1 is in the environment, which
-# is how shell.qml decides.
+# An earlier version started and stopped the process instead, which was much
+# worse: quickshell needs ~15s to bring this widget up (fonts, lyrics services,
+# Material colour), so the widget took ages to appear and there was no animation
+# at all, because a brand-new window simply pops into existence. A persistent
+# process makes the toggle instant and lets the slide/fade animation run.
+#
+# If the player is not running at all, start it once here - the persistent
+# process is normally launched from hyprland.lua at login.
 
 set -uo pipefail
 
-CONFIG="$HOME/.config/quickshell-music-player"
-PATTERN="quickshell.*quickshell-music-player"
+CONFIG="$HOME/.config/quickshell-music-player2"
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+STATE="$XDG_RUNTIME_DIR/music-widget-open"
+PATTERN="quickshell.*quickshell-music-player2"
 
-running() { pgrep -f "$PATTERN" >/dev/null 2>&1; }
-
-# Close it.
-if running; then
-    pkill -f "$PATTERN" >/dev/null 2>&1
-    # Give the surface a moment to be torn down before returning.
-    for _ in 1 2 3 4 5; do
-        running || break
-        sleep 0.2
-    done
-    exit 0
+# Make sure a player exists. Normally hyprland.lua already started one at login;
+# this is just the self-healing path.
+if ! ps -eo args= 2>/dev/null | grep -q "$PATTERN"; then
+    setsid quickshell -p "$CONFIG/shell.qml" >/dev/null 2>&1 </dev/null &
+    disown 2>/dev/null || true
+    # Give it a moment to create the FileView and load the current state, so the
+    # toggle below is not clobbered by the initial read.
+    sleep 2
 fi
 
-# Open it. MUSIC_WIDGET_OPEN is what makes the window visible.
-MUSIC_WIDGET_OPEN=1 setsid quickshell -p "$CONFIG/shell.qml" >/dev/null 2>&1 </dev/null &
-disown 2>/dev/null || true
+if [ "$(tr -d '[:space:]' < "$STATE" 2>/dev/null)" = "1" ]; then
+    printf '0' > "$STATE"
+else
+    printf '1' > "$STATE"
+fi
