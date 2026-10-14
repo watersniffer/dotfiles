@@ -51,26 +51,6 @@ $padding: 16px;
   margin-bottom: 12px;
 }
 
-.visualizer-container {
-  margin-top: 10px;
-  margin-bottom: 4px;
-  background-color: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 6px 10px;
-  min-height: 18px;
-  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.08), 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.cava-visualizer {
-  font-family: "monospace";
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.9);
-  text-shadow: 0 0 6px rgba(215, 214, 223, 0.7), 0 0 12px rgba(154, 154, 148, 0.5);
-}
-
-
 .progress-container {
   margin-bottom: 12px;
 }
@@ -193,10 +173,3 @@ $padding: 16px;
   background-color: #1a1a1a;
 }
 
-;; The catcher must be invisible but still have a painted region, so GTK
-;; gives the surface a non-empty input region and it can receive the click.
-;; 0.001 alpha is imperceptible - a fully transparent surface can end up with
-;; an empty input region and swallow nothing.
-.click-catcher {
-    background-color: rgba(0, 0, 0, 0.001);
-}

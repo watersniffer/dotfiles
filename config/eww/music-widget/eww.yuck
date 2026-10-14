@@ -17,10 +17,18 @@
 (defpoll formatted_position :initial "0:00" :interval "1s" "playerctl position -f '{{duration(position)}}' || echo '0:00'")
 
 (defpoll cover_art_path :interval "1s" "$HOME/.config/eww/music-widget/get-cover.sh")
-(defpoll volume_percent :interval "2s" "$HOME/.config/eww/music-widget/volumecontroller.sh get")
-(defpoll volume_mute    :interval "2s" "pamixer --get-mute")
 
-(deflisten cava :initial "" "bash $HOME/.config/eww/music-widget/cava.sh")
+;; NOTE: the volume column (vol_icon mute button + vertical slider) was removed
+;; from this widget. It duplicated the speaker module already in the waybar
+;; right-hand group, and scrolling volume there works fine.
+;; volumecontroller.sh is kept for the waybar module; volume_percent and
+;; volume_mute are no longer polled here, which drops two more polls.
+
+;; NOTE: cava was removed from this widget on purpose. It ran as a `deflisten`
+;; that shelled out to a long-running `cava` process streaming ASCII bars, and
+;; measured 48% CPU with the widget open versus ~0% closed. waybar's own
+;; custom/cava module already provides a visualiser in the bar, so having a
+;; second independent cava instance here was pure duplicated work.
 
 ;; --- Widget Definition ---
 
@@ -54,24 +62,6 @@
         (button :onclick "eww -c ~/.config/eww close music-widget" :tooltip "Close" :class "close-btn" "")
       )
 
-      (box :class "visualizer-container" :halign "start"
-        (label :class "cava-visualizer" :text cava)
-      )
-
-    )
-    
-    ;; Right: Volume Column
-    (box :class "volume_bar" :orientation "v" :space-evenly false :valign "center" :halign "center"
-      (button :onclick "$HOME/.config/eww/music-widget/volumecontroller.sh mute"
-              :class "vol_icon"
-              :style "color: ${volume_mute == 'true' ? '#9a9a94' : '#d7d6df'};"
-              {volume_mute == "true" ? "󰝟" : ""})
-      (scale :flipped true 
-             :orientation "v" 
-             :max 100 
-             :min 0 
-             :value {volume_percent}
-             :onchange "$HOME/.config/eww/music-widget/volumecontroller.sh set {}")
     )
   )
 )
@@ -91,39 +81,10 @@
                :width "460px"
                :height "160px"
   )
-  ;; NOT focusable. Being focusable would let this surface take the keyboard away
-  ;; from whatever window you are actually working in; dismissal is handled by the
-  ;; click-catcher underneath instead. Pointer events are delivered to layer
-  ;; surfaces regardless of keyboard interactivity.
+  ;; :focusable is left false so the widget never steals the keyboard from the
+  ;; window you are working in. Closing is done with the waybar media module
+  ;; (click it again), the ✕ button, or Super+W — no click-catcher layer.
   :wm-ignore true
   (music-widget)
 )
 
-;; --- Click-away catcher ---------------------------------------------------
-;;
-;; A transparent full-screen surface that sits UNDERNEATH the music widget while
-;; it is open. Every click that is not on the widget lands here instead of
-;; falling through to the app behind, which is what makes the widget behave like
-;; a normal dropdown: click anywhere to dismiss.
-;;
-;; It must be opened BEFORE music-widget so it ends up lower in the stacking
-;; order; eww-music-toggle enforces that ordering, and closes this window again
-;; whenever the widget is dismissed.
-;;
-;; :focusable false is deliberate - a focusable full-screen surface would steal
-;; the keyboard from the window you are actually working in. Pointer events are
-;; delivered to layer surfaces regardless of keyboard interactivity.
-
-  (defwindow click-catcher
-    :monitor 0
-    :geometry (
-      geometry :x "0px"
-               :y "0px"
-               :width "100%"
-               :height "100%"
-    )
-    :wm-ignore true
-    :focusable false
-    (box :class "click-catcher"
-         :onclick "bash $HOME/.local/bin/eww-music-dismiss")
-  )
