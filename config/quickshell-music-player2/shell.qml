@@ -3,30 +3,34 @@
 // Media player widget for the waybar mpris module.
 //
 // Built on https://github.com/GTGalaxi/qsMediaPlayer (a single self-contained
-// MediaPlayer.qml) and wrapped in two layer-shell windows:
+// MediaPlayer.qml) plus two layer-shell windows.
 //
-//  * TRIGGER - always visible, fully transparent, sitting over the bar in the
-//    column above the card. This is what makes hover work at all: the card's own
-//    window is destroyed when hidden, so it cannot be the thing that re-opens it.
+// WHY TWO WINDOWS, AND WHY THE TRIGGER IS THE BIG ONE
+// ---------------------------------------------------
+// The card is its own window because it has to be clickable - the player cycle
+// arrows and dots live on it.
 //
-//  * CARD - the visible widget. Appears on hover, disappears when hover is gone
-//    from BOTH the trigger and the card.
+// The hover handling is deliberately NOT shared with the card. An earlier
+// version gave the card its own HoverHandler and relied on handing hover over
+// when the cursor moved down off the bar. That handoff never completed: the
+// cursor left the trigger, the card had not yet reported being hovered, so
+// `hovering` went false and the widget closed - it was impossible to reach.
+//
+// So the trigger now spans the ENTIRE column, bar down past the bottom of the
+// card, and owns all hover. One window means one continuous hover region and no
+// handoff to lose. The card sits above it and only draws and takes clicks.
+//
+// While the card is closed the trigger is masked down to the bar strip, so the
+// invisible part of the window does not swallow clicks meant for the desktop or
+// for whatever window is underneath.
 //
 // WHY HOVER EVENTS AND NOT A POLL
 // -------------------------------
-// The obvious approach is to poll the cursor and test it against two rectangles.
-// That costs ~8.7ms per `hyprctl cursorpos` call on this machine (measured over
-// 50 calls), so even 10Hz would burn ~9% of a core - unacceptable on the i5.
-// A long-lived polling loop does not help, because the cost is hyprctl's own
-// runtime, not the fork.
-//
-// Quickshell's Hyprland module exposes no cursor position either (its qmltypes is
-// an empty stub), so there is nothing native to read. Qt's HoverHandler is
-// event-driven and costs nothing, so that is what this uses.
-//
-// The trigger strip does cover waybar's mpris module, which means clicks there
-// land on us rather than waybar. That is fine - hover replaced the need to click
-// to open, and the module's only click action was our own toggle anyway.
+// Polling the cursor costs ~8.7ms per `hyprctl cursorpos` call on this machine
+// (measured over 50 calls), so even 10Hz would burn ~9% of a core. A long-lived
+// polling loop does not help, because the cost is hyprctl's runtime, not the
+// fork. Quickshell's Hyprland module exposes no cursor position either (its
+// qmltypes is an empty stub). Qt hover events are event-driven and free.
 //
 // A NOTE ON THE NUMBERS IN HERE
 // -----------------------------
@@ -39,10 +43,9 @@
 //
 // Separately, the bar reserves the top 26px (`hyprctl monitors` shows
 // `reserved: 0 26 0 0`), which pushes any top-anchored layer surface down to
-// y=26. That is why the trigger needs a negative top margin to sit over the bar
-// rather than under it.
+// y=26. That is why the trigger needs a negative top margin to start at y=0.
 //
-// To move or resize the card, change the LOGICAL number you want and divide by
+// To move or resize things, change the LOGICAL number you want and divide by
 // 0.9, then confirm with `hyprctl layers | grep quickshell`.
 
 import QtQuick
@@ -57,19 +60,16 @@ ShellRoot {
     readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000")
                                          + "/music-widget-open"
 
-    // Hover state of the two zones.
+    // Hover state. Only the trigger sets this; the card never reports hover.
     property bool hoverTrigger: false
-    property bool hoverCard: false
 
     // Click pin. The state file is still watched so the waybar mpris click (which
     // runs ~/.local/bin/music-widget-toggle) keeps working as a "pin it open"
-    // control. Hover alone would be enough, but the pin is a useful fallback if
-    // the trigger strip ever ends up misaligned with the module.
+    // control.
     property string state: "0"
     readonly property bool pinned: state === "1"
 
-    property bool hovering: hoverTrigger || hoverCard
-    readonly property bool open: pinned || hovering
+    readonly property bool open: pinned || hoverTrigger
 
     // Follow the pin file.
     //
@@ -98,27 +98,9 @@ ShellRoot {
         }
     }
 
-    // A short grace period so travelling from the bar down onto the card - or
-    // between the two - does not flash the widget closed mid-movement.
-    Timer {
-        id: hideGrace
-        interval: 220
-        onTriggered: root.hoverTrigger = false
-    }
-
-    Connections {
-        target: root
-        function onHoveringChanged() {
-            if (root.hovering)
-                hideGrace.stop();
-            else
-                hideGrace.restart();
-        }
-    }
-
     // ---------------------------------------------------------------- trigger
-    // Invisible, always-on trigger strip over the bar, in the column the card
-    // hangs below. 380 wide covers the mpris module and the card beneath it.
+    // Declared FIRST so the card is stacked above it: the card takes clicks,
+    // this takes hover.
     PanelWindow {
         id: trigger
 
@@ -127,34 +109,35 @@ ShellRoot {
         anchors.top: true
         anchors.left: true
         margins.left: 548
+
         // Negative: the bar reserves the top 26px, which pushes a top-anchored
-        // layer surface below it. Without this the trigger would sit under the
-        // bar instead of over it, and hovering the module would never hit it.
+        // layer surface down to y=26. Without this the trigger would start under
+        // the bar instead of over it, and hovering the module would never hit it.
         margins.top: -29
 
-        // Floating overlay: reserve no space, or Hyprland would shove every
-        // tiled window out of the way.
         exclusiveZone: -1
 
         implicitWidth: 422
-        implicitHeight: 33
+        implicitHeight: 198      // logical 178: bar strip down past the card
 
         color: "transparent"
 
-        // A Rectangle, not a bare Item: only visual items report implicitWidth/
-        // implicitHeight, and PanelWindow commits to the content's implicit size.
-        // A plain Item here collapses the trigger to a few stray pixels.
+        // Shrink to just the bar strip while the card is closed, so the invisible
+        // remainder of this window does not eat clicks aimed at the desktop.
+        mask: Region {
+            regions: root.open
+                ? [{ x: 0, y: 0, width: 422, height: 198 }]
+                : [{ x: 0, y: 0, width: 422, height: 33 }]
+        }
+
         Rectangle {
             width: 422
-            height: 33
+            height: 198
             color: "transparent"
 
             HoverHandler {
                 id: triggerHover
-                onHoveredChanged: {
-                    root.hoverTrigger = hovered;
-                    if (hovered) hideGrace.stop();
-                }
+                onHoveredChanged: root.hoverTrigger = hovered
             }
         }
     }
@@ -168,15 +151,17 @@ ShellRoot {
         anchors.top: true
         anchors.left: true
         margins.left: 548
-        // 0, not 4: the bar's 26px reserved zone already places the card at
-        // y=26, flush under the bar. Any extra margin leaves a seam the cursor
-        // crosses and the widget closes.
+
+        // 0, not a positive value: the bar's 26px reserved zone already places
+        // the card at y=26, flush under the bar. An extra margin leaves a seam
+        // the cursor crosses.
         margins.top: 0
 
         exclusiveZone: -1
 
         implicitWidth: 422
-        implicitHeight: 169
+        implicitHeight: 169      // logical 152
+
         color: "transparent"
 
         Item {
@@ -189,31 +174,26 @@ ShellRoot {
             opacity: root.open ? 1 : 0
             y: root.open ? 0 : -34
 
-            // The card emerges from its top-right corner rather than fading in
-            // place: it starts small, drops in, and overshoots slightly on the
-            // way. Origin is pinned to a corner so the growth reads as unfolding
-            // out of that point.
+            // The card emerges from the TOP CENTRE of its own box - directly
+            // under the bar it belongs to - scaling up from there while dropping
+            // in, with an OutBack overshoot for snap.
             //
-            // Spring physics rather than fixed-duration easing. Quickshell's
-            // SpringAnimation carries velocity across interruptions, so a
-            // reversal mid-flight continues smoothly instead of restarting, and
-            // it is frame-rate independent rather than tied to a duration.
-            property real pop: root.open ? 1 : 0.55
-
-            transform: Scale {
-                origin.x: slideHost.width
-                origin.y: 0
-                xScale: slideHost.pop
-                yScale: slideHost.pop
-            }
-
-            // NOTE: this uses Behavior + NumberAnimation, not Quickshell's
+            // This uses Behavior + NumberAnimation, NOT Quickshell's
             // SpringAnimation. A SpringAnimation on a property that also has a
             // binding takes ownership of the property and loses the binding it
             // needed as its target, so it never moves - verified by sampling
             // `pop` every frame: it sat at 0.550 for the whole open transition
             // while `open` was true. Behavior animates binding-driven changes
-            // correctly, and Easing.OutBack supplies the snappy overshoot.
+            // correctly. Easing.OutBack supplies the overshoot.
+            property real pop: root.open ? 1 : 0.55
+
+            transform: Scale {
+                origin.x: slideHost.width / 2
+                origin.y: 0
+                xScale: slideHost.pop
+                yScale: slideHost.pop
+            }
+
             Behavior on pop {
                 NumberAnimation {
                     duration: 340
@@ -233,20 +213,6 @@ ShellRoot {
                 NumberAnimation {
                     duration: 300
                     easing.type: Easing.OutCubic
-                }
-            }
-
-            // Hover lives on slideHost itself, NOT on a separate transparent
-            // Rectangle declared here. A sibling declared before the background
-            // and the card sits underneath them in z-order, so it never receives
-            // hover - which made the widget vanish the instant the cursor left
-            // the bar. A handler on the parent still fires with children on top,
-            // and the card's own buttons keep their clicks.
-            HoverHandler {
-                id: cardHover
-                onHoveredChanged: {
-                    root.hoverCard = hovered;
-                    if (hovered) hideGrace.stop();
                 }
             }
 
