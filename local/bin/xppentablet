@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+# XP-Pen tablet driver launcher.
+#
+# SYMPTOM
+# -------
+# The PenTablet window opened completely blank/transparent - only Hyprland's
+# blur behind it was visible. The app's own log explained why:
+#
+#     QPainter::begin: Paint device returned engine == 0, type: 2
+#     QWidget::render: Cannot render with an inactive painter
+#
+# "Paint device returned engine == 0" means Qt had NO valid paint engine for the
+# window, so it drew nothing at all while the compositor happily blurred the
+# empty surface behind it.
+#
+# WHY
+# ---
+# XP-Pen's PenTablet bundles its OWN Qt 5.56 (see /usr/lib/pentablet/lib/, which
+# contains libQt5XcbQpa and the rest of the Qt5 set). It is a Qt5 app.
+#
+# The session exports two variables that a Qt5 app cannot honour:
+#
+#   QT_QPA_PLATFORMTHEME=qt6ct   qt6ct is a Qt6-only configuration tool. A Qt5
+#                                app pointed at it ends up with no usable style,
+#                                and with no style it has no paint engine.
+#   QT_STYLE_OVERRIDE=kvantum     forces the Kvantum style, which is built for
+#                                Qt6/Qt5-KDE layouts and renders Qt5 widgets
+#                                incorrectly.
+#
+# This is the same class of problem as the Krita UI glitches: a session-wide Qt6
+# variable leaking into an app that ships Qt5.
+#
+# The tablet itself is detected fine (Deco Mini7 V2) - only the painting was
+# broken, which is why the window existed and had a correct size but showed
+# nothing.
+
+# Drop the Qt6-only theme plugin and the Kvantum override so this Qt5 app uses
+# its own built-in style, which always has a working paint engine.
+unset QT_QPA_PLATFORMTHEME
+unset QT_STYLE_OVERRIDE
+
+# Integer scaling: this app does its own layout math and 0.90 fractional scaling
+# produced clipped/misaligned controls at 1366x768.
+export QT_SCALE_FACTOR=1
+
+# The bundled Qt is old enough that some compositors trip over the automatic
+# GTK/qt6ct theme lookup; naming the platform explicitly avoids a fallback path
+# with no paint engine.
+export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+
+exec /usr/lib/pentablet/PenTablet.sh "$@"
