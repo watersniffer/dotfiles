@@ -92,11 +92,14 @@ ShellRoot {
         anchors.left: true
         // Centre on the 1366px panel.
         //
-        // The obvious arithmetic is (1366 - 378) / 2 = 494, but margins.left is
-        // NOT the surface x - on this build Hyprland reports x = margin - 55, so
-        // 549 is what actually lands the 378px card at x=494, centre 683.
-        // Calibrated against `hyprctl layers`, not guessed.
-        margins.left: 549
+        // Calibrated against `hyprctl layers`, not arithmetic. Two wrinkles:
+        //   * margins.left is NOT the surface x - Hyprland reports x = margin - 57.
+        //   * the committed surface is 340 wide, not the 378 requested below.
+        //     Neither implicitWidth nor width reaches the committed size on this
+        //     build; the window auto-sizes to the card's content (320 implicit
+        //     plus the 12px cycle-arrow overhang on each side).
+        // 570 is therefore what puts the 340px card at x=513: centre 683.
+        margins.left: 570
         margins.top: 28
 
         // This widget floats OVER the desktop. Without this, Hyprland gives the
@@ -105,7 +108,9 @@ ShellRoot {
         // report. -1 means reserve nothing.
         exclusiveZone: -1
 
-        implicitWidth: 420
+        // These are advisory; see the note above about the committed size.
+        implicitWidth: 378
+        width: 378
         implicitHeight: card.implicitHeight
         color: "transparent"
 
@@ -148,10 +153,35 @@ ShellRoot {
                 }
             }
 
+            // Opaque AMOLED background.
+            //
+            // MediaPlayer.qml declares a `backgroundColor` property and then
+            // never uses it - upstream draws no background rectangle anywhere,
+            // because it is designed as a transparent floating widget. So the
+            // theme colours we pass in below only affect text/icons/buttons and
+            // the widget renders see-through.
+            //
+            // The fix lives here rather than in the vendored file so
+            // MediaPlayer.qml stays a byte-for-byte copy of upstream and can be
+            // re-fetched with a plain curl.
+            Rectangle {
+                anchors.fill: parent
+                radius: 12
+                color: "#0b0b11"          // @base
+                border.width: 1
+                border.color: "#1c1c24"    // hairline, keeps the edge visible on a dark wallpaper
+            }
+
             // AMOLED palette, matching ~/.config/waybar/colors.css:
             //   @base #0b0b11   @text #bfbcc7   @subtext #85838b
             MediaPlayer {
                 id: card
+
+                // The component's children anchor to `parent.left`/`parent.right`,
+                // but it never sets its own width, so as a plain Item it would
+                // lay out at 0 and render nothing.
+                width: 378
+
                 backgroundColor: "#0b0b11"
                 foregroundColor: "#bfbcc7"
                 mutedColor:      "#85838b"

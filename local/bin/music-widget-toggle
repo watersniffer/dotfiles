@@ -3,8 +3,8 @@
 # Toggle the Quickshell music player (replaces the old eww music widget).
 # Bound to waybar's mpris module: click to open, click again to close.
 #
-# This only flips a one-byte state file that the player's shell.qml watches with
-# FileView.watchChanges. It does NOT start or stop quickshell.
+# This only flips a one-byte state file that the player's shell.qml polls. It
+# does NOT start or stop quickshell.
 #
 # An earlier version started and stopped the process instead, which was much
 # worse: quickshell needs ~15s to bring this widget up (fonts, lyrics services,
@@ -20,16 +20,21 @@ set -uo pipefail
 CONFIG="$HOME/.config/quickshell-music-player2"
 : "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
 STATE="$XDG_RUNTIME_DIR/music-widget-open"
-PATTERN="quickshell.*quickshell-music-player2"
 
 # Make sure a player exists. Normally hyprland.lua already started one at login;
 # this is just the self-healing path.
-if ! ps -eo args= 2>/dev/null | grep -q "$PATTERN"; then
+#
+# `pgrep -x quickshell` matches the process NAME exactly and never matches this
+# script or the shell that invoked it. An earlier `ps -eo args= | grep
+# quickshell.*quickshell-music-player2` looked equivalent but matched any
+# command line merely mentioning those words - including the shell running the
+# test - so it concluded nothing was running and spawned a duplicate.
+if ! pgrep -x quickshell >/dev/null 2>&1; then
     setsid quickshell -p "$CONFIG/shell.qml" >/dev/null 2>&1 </dev/null &
     disown 2>/dev/null || true
-    # Give it a moment to create the FileView and load the current state, so the
-    # toggle below is not clobbered by the initial read.
-    sleep 2
+    # Give it a moment to start and load the current state, so the toggle below
+    # is not clobbered by the initial read.
+    sleep 3
 fi
 
 if [ "$(tr -d '[:space:]' < "$STATE" 2>/dev/null)" = "1" ]; then
