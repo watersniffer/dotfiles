@@ -2,51 +2,61 @@
 
 # XP-Pen tablet driver launcher.
 #
-# SYMPTOM
-# -------
-# The PenTablet window opened completely blank/transparent - only Hyprland's
-# blur behind it was visible. The app's own log explained why:
+# THE ACTUAL BUG
+# --------------
+# /usr/lib/pentablet/PenTablet ships its OWN Qt 5.6.0 in /usr/lib/pentablet/lib.
+# Its launcher script sets LD_LIBRARY_PATH to that directory but never sets
+# QT_PLUGIN_PATH, so the bundled Qt resolves platform-theme plugins from the
+# DEFAULT search path - which is the system Qt 5.15 plugin directory.
+#
+# It therefore loads the system qt5ct platform theme:
+#
+#     /usr/lib/qt/plugins/platformthemes/libqt5ct.so   <- built for Qt 5.15.19
+#
+# against its own Qt 5.6.0 libraries. Both provide libQt5Core.so.5, so the
+# dynamic loader accepts the plugin and there is no error at load time - but the
+# internals do not match, the style ends up with no usable paint engine, and the
+# window renders as nothing:
 #
 #     QPainter::begin: Paint device returned engine == 0, type: 2
 #     QWidget::render: Cannot render with an inactive painter
 #
-# "Paint device returned engine == 0" means Qt had NO valid paint engine for the
-# window, so it drew nothing at all while the compositor happily blurred the
-# empty surface behind it.
+# Hyprland sees a correctly-sized surface and blurs the empty window behind it,
+# which is why the app looks like a transparent rectangle with only a blur.
 #
-# WHY
-# ---
-# XP-Pen's PenTablet bundles its OWN Qt 5.56 (see /usr/lib/pentablet/lib/, which
-# contains libQt5XcbQpa and the rest of the Qt5 set). It is a Qt5 app.
+# (An earlier note in this file blamed QT_QPA_PLATFORMTHEME=qt6ct as a Qt6/Qt5
+# mismatch. That was wrong. qt6ct ships BOTH libqt5ct.so and libqt6ct.so, and
+# the Qt5 plugin is perfectly valid for a Qt5 app. The real fault is the 5.6
+# vs 5.15 ABI gap between the bundled Qt and the system plugin.)
 #
-# The session exports two variables that a Qt5 app cannot honour:
+# THE FIX
+# -------
+# Give the bundled Qt its own empty plugin path so it CANNOT reach the system
+# Qt 5.15 plugins, and drop the session's Qt variables so Qt falls back to its
+# own built-in widgets style, which always has a working paint engine.
 #
-#   QT_QPA_PLATFORMTHEME=qt6ct   qt6ct is a Qt6-only configuration tool. A Qt5
-#                                app pointed at it ends up with no usable style,
-#                                and with no style it has no paint engine.
-#   QT_STYLE_OVERRIDE=kvantum     forces the Kvantum style, which is built for
-#                                Qt6/Qt5-KDE layouts and renders Qt5 widgets
-#                                incorrectly.
-#
-# This is the same class of problem as the Krita UI glitches: a session-wide Qt6
-# variable leaking into an app that ships Qt5.
-#
-# The tablet itself is detected fine (Deco Mini7 V2) - only the painting was
-# broken, which is why the window existed and had a correct size but showed
-# nothing.
+# Nothing outside this process is touched: no udev rules, no input devices.
 
-# Drop the Qt6-only theme plugin and the Kvantum override so this Qt5 app uses
-# its own built-in style, which always has a working paint engine.
+_pentablet_dir=/usr/lib/pentablet
+
+# An empty, app-local plugin dir. Qt finds no platformtheme/style plugin there
+# and uses its built-in defaults rather than loading an ABI-incompatible one.
+_pentablet_plugins="$_pentablet_dir/plugins"
+mkdir -p "$_pentablet_plugins/platforms" "$_pentablet_plugins/styles" 2>/dev/null
+
+# Keep it first so it wins over any system path, and leave the app's own libs.
+export QT_PLUGIN_PATH="$_pentablet_plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+export QT_QPA_PLATFORM_PLUGIN_PATH="$_pentablet_plugins/platforms"
+
+# Do not let the session's Qt config bleed into this Qt 5.6 app.
 unset QT_QPA_PLATFORMTHEME
 unset QT_STYLE_OVERRIDE
 
-# Integer scaling: this app does its own layout math and 0.90 fractional scaling
-# produced clipped/misaligned controls at 1366x768.
+# 0.90 fractional scaling made this app's hand-rolled layout clip and overlap.
 export QT_SCALE_FACTOR=1
 
-# The bundled Qt is old enough that some compositors trip over the automatic
-# GTK/qt6ct theme lookup; naming the platform explicitly avoids a fallback path
-# with no paint engine.
-export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"
+# Force a deterministic platform. xcb matches what this build was tested on
+# (it is an XCB app: libQt5XcbQpa is bundled).
+export QT_QPA_PLATFORM=xcb
 
-exec /usr/lib/pentablet/PenTablet.sh "$@"
+exec "$_pentablet_dir/PenTablet.sh" "$@"
