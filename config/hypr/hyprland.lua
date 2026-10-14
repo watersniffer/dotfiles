@@ -199,6 +199,13 @@ hl.env("EDITOR", "nvim")
 hl.env("VISUAL", "nvim")
 hl.env("TERMINAL", "alacritty")
 
+-- Cursor theme and size. These have to be in HYPRLAND's own environment, not
+-- just an interactive shell's: the compositor reads them when it spawns
+-- clients. XCURSOR_SIZE was exported in the shell but never reached the
+-- compositor, so the size never actually applied.
+hl.env("XCURSOR_THEME", "Bibata-Modern-Ice")
+hl.env("XCURSOR_SIZE", "22")
+
 local mainMod = "SUPER" -- the stock declaration lived in the block replaced above
 
 local stepW = 136 -- 10% of this 1366x768 panel, rounded
