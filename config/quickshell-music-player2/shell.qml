@@ -16,9 +16,12 @@
 // cursor left the trigger, the card had not yet reported being hovered, so
 // `hovering` went false and the widget closed - it was impossible to reach.
 //
-// So the trigger now spans the ENTIRE column, bar down past the bottom of the
-// card, and owns all hover. One window means one continuous hover region and no
-// handoff to lose. The card sits above it and only draws and takes clicks.
+// So the trigger spans the ENTIRE column, bar down past the bottom of the card,
+// and the widget stays open while EITHER window is hovered. Both surfaces must
+// report hover: the card is stacked above the trigger and covers the same
+// column, so past y=26 the card is the surface under the pointer and the
+// trigger sees nothing. Trusting the trigger alone is what made the widget
+// "close early" the moment you crossed onto the card.
 //
 // While the card is closed the trigger is masked down to the bar strip, so the
 // invisible part of the window does not swallow clicks meant for the desktop or
@@ -60,8 +63,17 @@ ShellRoot {
     readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000")
                                          + "/music-widget-open"
 
-    // Hover state. Only the trigger sets this; the card never reports hover.
+    // Hover state. BOTH windows report in, and the widget stays open while
+    // either is hovered.
+    //
+    // This is essential, not belt-and-braces: the card is stacked ABOVE the
+    // trigger and covers the same column, so the moment the cursor crosses
+    // y=26 the card surface is the one under the pointer and the trigger's
+    // surface stops receiving events entirely. An earlier version gave hover to
+    // the trigger alone and the widget therefore closed the instant you
+    // crossed onto the card - from the user's side, "it closes early".
     property bool hoverTrigger: false
+    property bool hoverCard: false
 
     // Click pin. The state file is still watched so the waybar mpris click (which
     // runs ~/.local/bin/music-widget-toggle) keeps working as a "pin it open"
@@ -69,7 +81,27 @@ ShellRoot {
     property string state: "0"
     readonly property bool pinned: state === "1"
 
-    readonly property bool open: pinned || hoverTrigger
+    readonly property bool hovering: hoverTrigger || hoverCard
+    readonly property bool open: pinned || hovering
+
+    // Safety net for the handover between the two surfaces. Both handlers
+    // normally report in the same event batch, but if one lags, this keeps the
+    // widget up long enough to bridge it.
+    Timer {
+        id: hideGrace
+        interval: 260
+        onTriggered: root.hoverTrigger = false
+    }
+
+    Connections {
+        target: root
+        function onHoveringChanged() {
+            if (root.hovering)
+                hideGrace.stop();
+            else
+                hideGrace.restart();
+        }
+    }
 
     // Follow the pin file.
     //
@@ -157,7 +189,10 @@ ShellRoot {
 
             HoverHandler {
                 id: triggerHover
-                onHoveredChanged: root.hoverTrigger = hovered
+                onHoveredChanged: {
+                    root.hoverTrigger = hovered;
+                    if (hovered) hideGrace.stop();
+                }
             }
         }
     }
@@ -233,6 +268,14 @@ ShellRoot {
                 NumberAnimation {
                     duration: 300
                     easing.type: Easing.OutCubic
+                }
+            }
+
+            HoverHandler {
+                id: cardHover
+                onHoveredChanged: {
+                    root.hoverCard = hovered;
+                    if (hovered) hideGrace.stop();
                 }
             }
 
