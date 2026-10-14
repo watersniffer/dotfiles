@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+# Single entry point for every playerctl call the eww music widget makes.
+#
+# Handles the multi-player problem: with two players registered, bare playerctl
+# latches onto whichever one it likes (often a PAUSED one) and fails with "No
+# player could handle this command" when that player exits, which fills the
+# widget with error text. This pins every call to one player via
+# music-player-select, which prefers whichever player is actually Playing.
+#
+# Usage:
+#   playerctl-pinned metadata --format '{{title}}'
+#   playerctl-pinned status
+#   playerctl-pinned metadata --format '{{title}}' --follow
+#   playerctl-pinned position
+
+set -uo pipefail
+
+SELECT="$HOME/.local/bin/music-player-select"
+
+player=$("$SELECT" 2>/dev/null)
+
+if [ -z "$player" ]; then
+    # No player at all. `status` has a sensible answer; the rest should print
+    # nothing so the caller can apply its own fallback.
+    case "${1:-}" in
+        status) echo "Stopped"; exit 0 ;;
+        *)      exit 1 ;;
+    esac
+fi
+
+exec playerctl -p "$player" "$@"

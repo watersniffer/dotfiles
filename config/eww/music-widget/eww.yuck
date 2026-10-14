@@ -1,20 +1,38 @@
 ;; --- Listeners & Polls ---
-;; Use `deflisten` with `playerctl --follow` to react to player events efficiently.
+;;
+;; Every playerctl call goes through ~/.local/bin/playerctl-pinned rather than
+;; bare playerctl. With more than one player registered (spotify AND a browser),
+;; bare playerctl latches onto a PAUSED player and ignores the playing one, and
+;; errors with "No player could handle this command" when its pick disappears -
+;; error text that used to end up in the title. playerctl-pinned pins every call
+;; to music-player-select, which prefers whichever player is actually Playing.
+;;
+;; The `grep -v 'No player could handle'` guards are a second line of defence so
+;; that error string can never reach the widget, even if the pinned call fails.
+;;
+;; --line-buffered is REQUIRED, not cosmetic. `playerctl --follow` emits one
+;; line per track change, so output arrives in bursts; grep block-buffers when
+;; stdout is a pipe (4-8KB) and never flushes in time, so the widget sat on
+;; "No Music Playing" while the correct title was already coming through.
+;; Verified: without it the pipeline yields nothing, with it it yields
+;; "Don't Copy My Flow".
+;;
+;; Use `deflisten` with `--follow` to react to player events efficiently.
 (deflisten song_title    :initial "No Music Playing"
-"playerctl metadata --format '{{title}}' --follow | python3 $HOME/.config/eww/music-widget/scroll.py 22 0.3 || echo 'No Music Playing'")
+"playerctl-pinned metadata --format '{{title}}' --follow 2>/dev/null | grep --line-buffered -v 'No player could handle' | python3 $HOME/.config/eww/music-widget/scroll.py 22 0.3 || echo 'No Music Playing'")
 
 (deflisten song_artist   :initial "Unknown Artist"
-"playerctl metadata --format '{{artist}}' --follow | python3 $HOME/.config/eww/music-widget/scroll.py 25 0.3 || echo 'Unknown Artist'")
+"playerctl-pinned metadata --format '{{artist}}' --follow 2>/dev/null | grep --line-buffered -v 'No player could handle' | python3 $HOME/.config/eww/music-widget/scroll.py 25 0.3 || echo 'Unknown Artist'")
 
 (deflisten player_status :initial "Stopped"
-"playerctl metadata --format '{{status}}' --follow || echo 'Stopped'")
+"playerctl-pinned metadata --format '{{status}}' --follow 2>/dev/null | grep --line-buffered -v 'No player could handle' || echo 'Stopped'")
 
 (defpoll song_length_s   :initial "1" :interval "2s"
-"playerctl metadata mpris:length | awk '{print $1 / 1000000}' || echo 1")
+"playerctl-pinned metadata mpris:length 2>/dev/null | awk '{print int($1 / 1000000)}' || echo 1")
 
-(defpoll song_position_s    :initial "0" :interval "1s" "playerctl position || echo 0")
+(defpoll song_position_s    :initial "0" :interval "1s" "playerctl-pinned position 2>/dev/null || echo 0")
 
-(defpoll formatted_position :initial "0:00" :interval "1s" "playerctl position -f '{{duration(position)}}' || echo '0:00'")
+(defpoll formatted_position :initial "0:00" :interval "1s" "playerctl-pinned position -f '{{duration(position)}}' 2>/dev/null || echo '0:00'")
 
 (defpoll cover_art_path :interval "1s" "$HOME/.config/eww/music-widget/get-cover.sh")
 
@@ -56,9 +74,9 @@
 
 
       (box :class "controls" :orientation "h" :space-evenly false :halign "center" :spacing 15
-        (button :onclick "playerctl previous" :tooltip "Previous" "󰒮")
-        (button :onclick "playerctl play-pause" :tooltip "Play/Pause" :class "play-btn" {player_status == "Playing" ? "󰏤" : "󰐊"})
-        (button :onclick "playerctl next" :tooltip "Next" "󰒭")
+        (button :onclick "playerctl-pinned previous" :tooltip "Previous" "󰒮")
+        (button :onclick "playerctl-pinned play-pause" :tooltip "Play/Pause" :class "play-btn" {player_status == "Playing" ? "󰏤" : "󰐊"})
+        (button :onclick "playerctl-pinned next" :tooltip "Next" "󰒭")
         (button :onclick "eww -c ~/.config/eww close music-widget" :tooltip "Close" :class "close-btn" "")
       )
 

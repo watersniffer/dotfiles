@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+# Resolve WHICH MPRIS player the eww music widget should follow.
+#
+# WHY THIS EXISTS
+# ---------------
+# Bare `playerctl` auto-selects a player. With two players registered (e.g.
+# spotify + a chromium instance) it happily latches onto a PAUSED one and
+# ignores the one that is actually playing. Worse, when the chosen player exits,
+# every call fails with "No player could handle this command" and the widget
+# fills with that error text.
+#
+# Measured on this machine with spotify (Paused) and chromium.instance2828292
+# (Stopped) both registered: bare playerctl reported spotify/Stopped/"Mortals",
+# while the real playing track was on the chromium instance.
+#
+# So: pick the first player that is actually Playing. Fall back to a remembered
+# or sole player only when nothing is playing, so the widget shows "Stopped"
+# rather than an error string.
+
+set -uo pipefail
+
+STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/eww-music-player"
+
+# Emit the player name to follow. Prints nothing if there are no players at all,
+# which callers treat as "no player".
+choose_player() {
+    local players playing
+
+    players=$(playerctl -l 2>/dev/null)
+    [ -z "$players" ] && return 0
+
+    # Prefer anything currently playing. Sort so the choice is stable between
+    # calls - playerctl -l order is not guaranteed and flipping players on every
+    # poll would make the title jump around.
+    playing=$(printf '%s\n' "$players" | while read -r p; do
+        [ -z "$p" ] && continue
+        if [ "$(playerctl -p "$p" status 2>/dev/null)" = "Playing" ]; then
+            printf '%s\n' "$p"
+        fi
+    done | sort)
+
+    if [ -n "$playing" ]; then
+        printf '%s\n' "$playing" | head -1
+        return 0
+    fi
+
+    # Nothing playing: keep showing whatever was shown before, if it still
+    # exists, so pausing does not blank the widget.
+    local remembered
+    remembered=$(cat "$STATE_FILE" 2>/dev/null)
+    if [ -n "$remembered" ] && printf '%s\n' "$players" | grep -qx "$remembered"; then
+        printf '%s\n' "$remembered"
+        return 0
+    fi
+
+    # Otherwise fall back to the first available player.
+    printf '%s\n' "$players" | head -1
+}
+
+player=$(choose_player)
+
+if [ -z "$player" ]; then
+    exit 0
+fi
+
+# Remember the current choice (only meaningful when something is playing).
+if [ "$(playerctl -p "$player" status 2>/dev/null)" = "Playing" ]; then
+    printf '%s\n' "$player" > "$STATE_FILE" 2>/dev/null || true
+fi
+
+printf '%s\n' "$player"
