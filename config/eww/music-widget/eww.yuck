@@ -50,8 +50,29 @@
 
 ;; --- Widget Definition ---
 
+;; --- Entrance animation ---------------------------------------------------
+;;
+;; GTK3 CSS has `transition` but NOT @keyframes, so the animation has to be
+;; written as a transition between two values that eww swaps over time.
+;;
+;; It is driven through :style rather than :class on purpose. A previous attempt
+;; used `:class "music-widget anim-start anim-{anim_state}"` and the widget
+;; rendered invisible, because `.anim-start { opacity: 0 }` stayed applied while
+;; the `anim-in` class never arrived.
+;;
+;; The real cause, verified by testing: eww expands ${var}, NOT {var}. The
+;; cover-art line in this same file has always used ${cover_art_path} and works;
+;; the earlier attempt used a bare {var} which stayed literal, so the second
+;; class never existed and only the opacity-0 rule applied. Note that :class and
+;; :style both need the dollar.
+;;
+;; Sequence: :initial 0 -> the poll returns 0 on its first run (after a short
+;; sleep, giving GTK time to realise the widget at opacity 0) -> 1 on every run
+;; after that. The 0 -> 1 change is what GTK interpolates over 200ms.
+(defpoll anim_opacity :initial "0" :interval "120ms" "bash $HOME/.config/eww/music-widget/anim.sh")
+
 (defwidget music-widget []
-  (box :class "music-widget" :orientation "h" :space-evenly false
+  (box :class "music-widget" :style "opacity: ${anim_opacity}" :orientation "h" :space-evenly false
     
     ;; Left: Cover Art
     (box :class "cover-art" :style "background-image: url('${cover_art_path}');")
