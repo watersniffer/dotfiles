@@ -69,10 +69,10 @@
 ;; Sequence: :initial 0 -> the poll returns 0 on its first run (after a short
 ;; sleep, giving GTK time to realise the widget at opacity 0) -> 1 on every run
 ;; after that. The 0 -> 1 change is what GTK interpolates over 200ms.
-(defpoll anim_opacity :initial "0" :interval "120ms" "bash $HOME/.config/eww/music-widget/anim.sh")
+(defpoll anim_style :initial "opacity: 0; background-color: rgba(0, 0, 0, 0); border-color: rgba(255, 255, 255, 0);" :interval "60ms" "bash $HOME/.config/eww/music-widget/anim.sh")
 
 (defwidget music-widget []
-  (box :class "music-widget" :style "opacity: ${anim_opacity}" :orientation "h" :space-evenly false
+  (box :class "music-widget" :style "${anim_style}" :orientation "h" :space-evenly false
     
     ;; Left: Cover Art
     (box :class "cover-art" :style "background-image: url('${cover_art_path}');")

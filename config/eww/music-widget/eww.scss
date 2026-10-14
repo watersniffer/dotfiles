@@ -14,10 +14,15 @@ $padding: 16px;
 }
 
 .music-widget {
-  /* Fade for the popup animation. GTK3 supports `transition` (but not
-     @keyframes), so the widget is driven 0 -> 1 via the anim_opacity :style in
-     eww.yuck and GTK interpolates it over 200ms. */
-  transition: opacity 200ms ease-out;
+  /* Popup animation. GTK3 supports `transition` (but not @keyframes), so the
+     widget is driven from the hidden state to the shown one by anim.sh via the
+     ${anim_style} :style in eww.yuck, and GTK interpolates these three over
+     260ms. Only RENDERING properties are used - see anim.sh for why the two
+     obvious movement options (margin-top, window :y) do not work here. */
+  transition:
+    opacity 260ms ease-out,
+    background-color 260ms ease-out,
+    border-color 260ms ease-out;
   background-color: $bg-color;
   border-radius: $border-radius;
   padding: $padding;
