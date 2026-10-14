@@ -387,11 +387,12 @@ hl.on("hyprland.start", function()
 
 	-- Waybar. pkill first: waybar.service exists on this system (currently
 	-- disabled) and if it is ever enabled it would stack a second bar.
-	-- Waybar was the bar until this was replaced by Quickshell. The waybar
-	-- config is still on disk and intact - delete these two lines to go back.
-	-- (To roll back fully: comment out the quickshell line below and uncomment
-	-- the waybar ones.)
+	-- Bar. Waybar is the bar again: DankMaterialShell was tried and removed
+	-- (it needed 1.3 GB RAM - unusable on this 8 GB machine), and the custom
+	-- Quickshell bar is kept at ~/.config/quickshell if you want it back.
+	-- The music widget is no longer eww - see music-widget-toggle below.
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
+	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
 	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
 	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
 	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell/shell.qml >/dev/null 2>&1 &")

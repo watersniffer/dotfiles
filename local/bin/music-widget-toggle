@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Toggle the Quickshell music player (replaces the old eww music widget).
+# Bound to waybar's mpris module: clicking it opens the player, clicking again
+# closes it.
+#
+# Why start/stop rather than a visibility toggle: Quickshell 0.3.2 as shipped by
+# Arch has no IpcHandler, so there is no way to tell a running shell to show or
+# hide a window. FileView.watchChanges was tried first and did not resolve in
+# practice. Starting and stopping is unambiguous and costs nothing while hidden,
+# because a hidden quickshell creates no layer surface at all.
+#
+# The window only appears when MUSIC_WIDGET_OPEN=1 is in the environment, which
+# is how shell.qml decides.
+
+set -uo pipefail
+
+CONFIG="$HOME/.config/quickshell-music-player"
+PATTERN="quickshell.*quickshell-music-player"
+
+running() { pgrep -f "$PATTERN" >/dev/null 2>&1; }
+
+# Close it.
+if running; then
+    pkill -f "$PATTERN" >/dev/null 2>&1
+    # Give the surface a moment to be torn down before returning.
+    for _ in 1 2 3 4 5; do
+        running || break
+        sleep 0.2
+    done
+    exit 0
+fi
+
+# Open it. MUSIC_WIDGET_OPEN is what makes the window visible.
+MUSIC_WIDGET_OPEN=1 setsid quickshell -p "$CONFIG/shell.qml" >/dev/null 2>&1 </dev/null &
+disown 2>/dev/null || true

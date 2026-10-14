@@ -59,7 +59,7 @@
         "interval": 10,
         "format": "{player_icon} {dynamic}",
         "format-paused": "{status_icon} {artist} {title}",
-        "on-click": "$HOME/.local/bin/eww-music-toggle",
+        "on-click": "$HOME/.local/bin/music-widget-toggle",
         "on-click-middle": "playerctl play-pause",
         "on-click-right": "playerctl next",
         "scroll-step": 5.0,
