@@ -36,7 +36,11 @@ Item {
         player: root.player
     }
 
-    property color themeSourceColor: playerBase.artDominantColor
+    // Pinned to the waybar palette instead of playerBase.artDominantColor.
+    // AdaptedMaterialScheme derives the entire scheme from this single
+    // colour, so fixing it is what makes the widget AMOLED black rather
+    // than tinting itself from whatever album art happens to be playing.
+    property color themeSourceColor: "#0b0b11"
     property QtObject blendedColors: AdaptedMaterialScheme {
         color: root.themeSourceColor
     }

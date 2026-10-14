@@ -11,40 +11,43 @@ Singleton {
     property real fontSizeScale: 1.0
 
     // Design Tokens - Colors (Material 3 Dark by default, adapts to album art)
+    // AMOLED palette, taken from ~/.config/waybar/colors.css so this widget
+    // matches the bar exactly:
+    //   @base #0b0b11   @text #bfbcc7   @subtext #85838b
     readonly property var colors: ({
-        colPrimary: "#a5d0bb",
-        colPrimaryHover: "#bfe3d0",
-        colPrimaryActive: "#8cbfa6",
-        colPrimaryContainer: "#2d4a3e",
-        colOnPrimary: "#122019",
-        colOnPrimaryContainer: "#c8ecd7",
-        colSecondary: "#b9cac0",
-        colSecondaryContainer: "#3b4a43",
-        colSecondaryContainerHover: "#465650",
-        colSecondaryContainerActive: "#52625b",
-        colOnSecondary: "#25342d",
-        colOnSecondaryContainer: "#a8b9af",
-        colLayer0: "#131614",
-        colOnLayer0: "#e2e2e0",
-        colLayer1: "#1a1c1b",
-        colOnLayer1: "#e2e2e0",
-        colLayer2: "#282a29",
-        colLayer3: "#333534",
-        colLayer3Hover: "#3d3f3e",
-        colLayer0Base: "#131614",
-        colLayer1Hover: "#222423",
-        colLayer1Active: "#2a2c2b",
-        colOnLayer3: "#e2e2e0",
-        colSubtext: "#a0a4a0",
-        colSurface: "#131614",
-        colOnSurface: "#e2e2e0",
-        colSurfaceContainer: "#1e201f",
-        colSurfaceContainerHigh: "#282a29",
-        colSurfaceContainerHighest: "#333534",
-        colOutline: "#8d928d",
-        colOutlineVariant: "#434844",
+        colPrimary: "#bfbcc7",
+        colPrimaryHover: "#cfced9",
+        colPrimaryActive: "#9c9ba4",
+        colPrimaryContainer: "#22222b",
+        colOnPrimary: "#0b0b11",
+        colOnPrimaryContainer: "#bfbcc7",
+        colSecondary: "#85838b",
+        colSecondaryContainer: "#1a1a21",
+        colSecondaryContainerHover: "#24242d",
+        colSecondaryContainerActive: "#2e2e39",
+        colOnSecondary: "#0b0b11",
+        colOnSecondaryContainer: "#bfbcc7",
+        colLayer0: "#0b0b11",
+        colOnLayer0: "#bfbcc7",
+        colLayer1: "#121219",
+        colOnLayer1: "#bfbcc7",
+        colLayer2: "#1a1a22",
+        colLayer3: "#23232c",
+        colLayer3Hover: "#2c2c36",
+        colLayer0Base: "#0b0b11",
+        colLayer1Hover: "#1a1a22",
+        colLayer1Active: "#23232c",
+        colOnLayer3: "#bfbcc7",
+        colSubtext: "#85838b",
+        colSurface: "#0b0b11",
+        colOnSurface: "#bfbcc7",
+        colSurfaceContainer: "#121219",
+        colSurfaceContainerHigh: "#1a1a22",
+        colSurfaceContainerHighest: "#23232c",
+        colOutline: "#3a3a44",
+        colOutlineVariant: "#23232c",
         colShadow: "#000000",
-        colScrim: "#80000000"
+        colScrim: "#99000000"
     })
 
     // Inir fixed color palette compatibility
@@ -191,6 +194,8 @@ Singleton {
     readonly property bool angelEverywhere: false
     readonly property bool auroraEverywhere: false
     readonly property bool cookieEverywhere: false
-    readonly property bool effectsEnabled: true
+    // AMOLED: disables the coloured glow/aurora overlays that tinted the
+    // card from the album art. Set true to get them back.
+    readonly property bool effectsEnabled: false
     readonly property bool gameModeMinimal: false
 }
