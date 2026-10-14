@@ -58,9 +58,7 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Hyprland.dispatch({
-                        function () { return "workspace " + wsId; }
-                    })
+                    onClicked: Hyprland.dispatch("workspace " + wsId)
                 }
             }
         }
@@ -73,9 +71,7 @@ Rectangle {
         onWheel: (wheel) => {
             var d = wheel.angleDelta.y;
             if (d === 0) return;
-            Hyprland.dispatch({
-                function () { return d > 0 ? "workspace e+1" : "workspace e-1"; }
-            });
+            Hyprland.dispatch(d > 0 ? "workspace e+1" : "workspace e-1");
         }
     }
 }

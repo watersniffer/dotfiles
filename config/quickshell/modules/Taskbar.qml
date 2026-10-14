@@ -61,9 +61,9 @@ Item {
                         var t = modelData;
                         if (!t) return;
                         if (mouse.button === Qt.MiddleButton) {
-                            Hyprland.dispatch({ function () { return "closewindow address:" + t.address; } });
+                            Hyprland.dispatch("closewindow address:" + t.address);
                         } else {
-                            Hyprland.dispatch({ function () { return "focuswindow address:" + t.address; } });
+                            Hyprland.dispatch("focuswindow address:" + t.address);
                         }
                     }
                 }
