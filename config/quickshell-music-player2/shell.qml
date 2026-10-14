@@ -122,18 +122,38 @@ ShellRoot {
 
         color: "transparent"
 
-        // Shrink to just the bar strip while the card is closed, so the invisible
-        // remainder of this window does not eat clicks aimed at the desktop.
+        // Shrink the input region to just the bar strip while the card is
+        // closed, so the invisible remainder of this window does not eat clicks
+        // meant for the desktop.
+        //
+        // Uses `item`, NOT `regions`: Region.regions is read-only (isReadonly in
+        // the qmltypes, no setter), so binding to it is silently ignored. That
+        // left the region EMPTY, which makes a Wayland surface fully
+        // click-through - hover stopped working entirely and clicks fell through
+        // to waybar. Only `item` is writable.
         mask: Region {
-            regions: root.open
-                ? [{ x: 0, y: 0, width: 422, height: 198 }]
-                : [{ x: 0, y: 0, width: 422, height: 33 }]
+            item: root.open ? triggerFull : triggerStrip
         }
 
         Rectangle {
+            id: triggerFull
             width: 422
             height: 198
             color: "transparent"
+        }
+
+        Rectangle {
+            id: triggerStrip
+            x: 0
+            y: 0
+            width: 422
+            height: 33
+            color: "transparent"
+        }
+
+        Item {
+            width: 422
+            height: 198
 
             HoverHandler {
                 id: triggerHover
