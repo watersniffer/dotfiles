@@ -378,6 +378,9 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
 	hl.exec_cmd("systemctl --user restart xdg-desktop-portal.service")
 
+	-- Waybar. pkill first: waybar.service exists on this system (currently
+	-- disabled) and if it is ever enabled it would stack a second bar.
+	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
 	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
 
 	hl.exec_cmd("awww-daemon")
@@ -392,7 +395,14 @@ hl.on("hyprland.start", function()
 	-- Session services.
 	hl.exec_cmd("nm-applet")
 	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
-	hl.exec_cmd("alacritty")
+
+	-- EasyEffects audio daemon, started HIDDEN so it only lives in the tray.
+	-- EasyEffects 8.3.0 has no --minimized flag; --hide-window is its
+	-- equivalent - effects stay applied while the window stays out of the way.
+	-- Alacritty used to be started here; removed so no terminal pops open at
+	-- login. It still launches on demand from Super+Return etc.
+	hl.exec_cmd("pkill -x easyeffects 2>/dev/null; true")
+	hl.exec_cmd("sleep 2; easyeffects --hide-window")
 
 	hl.exec_cmd("hypridle")
 end)
