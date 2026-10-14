@@ -387,8 +387,14 @@ hl.on("hyprland.start", function()
 
 	-- Waybar. pkill first: waybar.service exists on this system (currently
 	-- disabled) and if it is ever enabled it would stack a second bar.
+	-- Waybar was the bar until this was replaced by Quickshell. The waybar
+	-- config is still on disk and intact - delete these two lines to go back.
+	-- (To roll back fully: comment out the quickshell line below and uncomment
+	-- the waybar ones.)
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
-	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
+	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
+	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
+	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell/shell.qml >/dev/null 2>&1 &")
 
 	hl.exec_cmd("awww-daemon")
 	hl.exec_cmd(
