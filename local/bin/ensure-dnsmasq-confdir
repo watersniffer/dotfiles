@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# Re-add `conf-dir=/etc/dnsmasq.d/,*.conf` to /etc/dnsmasq.conf if it is missing.
+#
+# WHY: /etc/dnsmasq.conf is owned by the dnsmasq package, so `pacman -Syu`
+# overwrites it and silently drops the conf-dir line. That would stop
+# /etc/dnsmasq.d/porn-blocklist.conf from loading, i.e. the blocklist would
+# quietly stop working with no error anywhere. This is run from a pacman hook.
+#
+# Safe to run repeatedly: does nothing if the line is already present.
+
+set -uo pipefail
+
+CONF=/etc/dnsmasq.conf
+LINE='conf-dir=/etc/dnsmasq.d/,*.conf'
+
+[ -f "$CONF" ] || exit 0
+
+if grep -qE "^${LINE}" "$CONF"; then
+    exit 0
+fi
+
+{
+    echo ""
+    echo "# Added by ensure-dnsmasq-confdir (pacman hook): load drop-in configs,"
+    echo "# which is what pulls in /etc/dnsmasq.d/porn-blocklist.conf."
+    echo "$LINE"
+} >> "$CONF"
+
+# Make sure the blocklist itself exists too, so an upgrade never leaves dnsmasq
+# pointing at a missing file.
+if [ ! -s /etc/hosts.porn ]; then
+    /home/water/.local/bin/update-porn-blocklist >/dev/null 2>&1 || true
+fi
+
+systemctl try-reload-or-restart dnsmasq >/dev/null 2>&1 || true

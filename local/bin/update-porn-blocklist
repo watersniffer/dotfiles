@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+# Fetch + sanitise the porn blocklist into /etc/hosts.porn.
+#
+# WHY dnsmasq AND NOT /etc/hosts:
+# The list has ~950k domains. glibc's nss_files does a LINEAR scan of
+# /etc/hosts for every hostname that is not listed, so a 25MB hosts file pushed
+# DNS from 15 ms to 200-320 ms per lookup (measured). dnsmasq hashes the list
+# and caches, so lookups stay fast. /etc/hosts is deliberately left small.
+#
+# This script ONLY writes the list. dnsmasq picks it up via
+# /etc/dnsmasq.d/porn-blocklist.conf (addn-hosts) and needs no restart to reload
+# it - send SIGHUP to dnsmasq, or just restart it.
+#
+# LIMIT: DNS-level only. DNS-over-HTTPS bypasses this entirely, so browsers
+# need network.trr.mode forced to 0 (see fix-doh-in-browsers).
+
+set -uo pipefail
+
+LIST_URL="https://raw.githubusercontent.com/BlocklistProject/Lists/master/porn.txt"
+LIST="/etc/hosts.porn"
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "update-porn-blocklist: must run as root (writes $LIST)" >&2
+    exit 1
+fi
+
+tmp=$(mktemp) || exit 1
+trap 'rm -f "$tmp" "$tmp.clean"' EXIT
+
+echo "Fetching $LIST_URL ..." >&2
+if ! curl -fsSL --max-time 300 -o "$tmp" "$LIST_URL"; then
+    echo "update-porn-blocklist: download FAILED - existing $LIST left untouched" >&2
+    exit 1
+fi
+
+# Hosts-format lines only ("0.0.0.0 domain"), comments dropped, deduped, and
+# never allowed to shadow the local machine or the resolver itself.
+awk 'NF >= 2 && $1 == "0.0.0.0" { print $1, $2 }' "$tmp" \
+    | grep -vE ' (localhost|broadcaster|localhost\.localdomain|.*\.local|.*\.localhost)$' \
+    | sort -u > "$tmp.clean"
+
+count=$(wc -l < "$tmp.clean")
+# Guard against a truncated download or a changed format silently gutting the list.
+if [ "$count" -lt 500000 ]; then
+    echo "update-porn-blocklist: only $count entries parsed (expected >500000) - REFUSING to write" >&2
+    exit 1
+fi
+
+install -m 644 "$tmp.clean" "$LIST"
+echo "update-porn-blocklist: installed $count domains into $LIST" >&2
+
+# Reload dnsmasq so it picks the new list up immediately.
+if systemctl is-active --quiet dnsmasq; then
+    systemctl reload dnsmasq 2>/dev/null \
+        && echo "update-porn-blocklist: reloaded dnsmasq" >&2 \
+        || echo "update-porn-blocklist: reload failed, run: systemctl restart dnsmasq" >&2
+fi
