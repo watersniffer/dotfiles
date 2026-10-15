@@ -24,6 +24,13 @@ to nothing. A seed is generated when there is neither a query nor a seed, which
 makes the API return results anonymously. Entering a free key in the picker's own
 settings is the better fix and makes this unnecessary.
 
+**`modules/wallpaper/WallpaperLayer.qml`** — `margins.top: -29` added. Hyprland
+places Background-layer surfaces *below* any exclusive zone, so with waybar
+reserving the top 26px the wallpaper started at y=26 and left an undressed strip
+behind the bar. The surface now covers `0 0 1366 768`. `-29` rather than `-26`
+because Quickshell requests an offset and Hyprland commits exactly 0.9x it on
+this build, so 26 has to be requested as 26/0.9.
+
 **`settings.json`** — `wallpaperDir` changed from the default
 `~/Pictures/wallpapers` to `~/Pictures/Wallpapers`, which is what this machine
 actually has. The capital W matters.
