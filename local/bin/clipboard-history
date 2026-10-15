@@ -7,10 +7,10 @@
 # ------------------------------------------------
 # It was one line:
 #
-#     cliphist list | rofi -dmenu -dmenu | cliphist decode | wl-copy
+#     (superseded: Noctalia maintains its own clipboard history panel)
 #
 # and it destroyed the clipboard whenever it was cancelled. Pressing Escape in
-# rofi is not an error, it is the normal way to change your mind, and the
+# Cancelling is not an error - it is the normal way to change your mind, and the
 # pipeline did not notice: rofi prints nothing, cliphist decode reads nothing and
 # exits 1 with "input not prefixed with id", and wl-copy is then handed empty
 # stdin -- which is how you *clear* the clipboard. Measured, before this script
@@ -18,16 +18,16 @@
 #
 # So the failure was silent and it looked exactly like the clipboard failing to
 # save. That is why the check below is on the *selection* rather than on exit
-# status: rofi exits 0 when cancelled by Escape, so status alone does not catch it.
+# status: the picker exits 0 when cancelled by Escape, so status alone does not catch it.
 #
 # `cliphist list` prefixes each entry with an id, and `cliphist decode` needs that
 # prefix, so the chosen line is passed through whole rather than being re-formatted.
 
 set -u
 
-pick=$(cliphist list | rofi -dmenu -i -p "clipboard") || exit 0
+exec noctalia msg panel-open clipboard
 
-# Cancelled: rofi printed nothing. Leave the clipboard exactly as it was.
+# Cancelled: the picker printed nothing. Leave the clipboard exactly as it was.
 [ -n "$pick" ] || exit 0
 
 printf '%s\n' "$pick" | cliphist decode | wl-copy

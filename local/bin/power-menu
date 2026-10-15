@@ -3,7 +3,7 @@
 # Power menu. Logout goes through logout-session; the rationale for not using
 # wlogout's own button lives in that script.
 #
-# Glyphs are Nerd Font codepoints, and rofi uses JetBrainsMono Nerd Font.
+# Glyphs are Nerd Font codepoints, rendered by Noctalia with the system font.
 
 set -uo pipefail
 
@@ -16,7 +16,7 @@ choice=$(
 		$'\uf240  Hibernate' \
 		$'\uf021  Reboot' \
 		$'\uf015  Shutdown' |
-		rofi -dmenu -i -p "Power" -mesg "Session actions"
+		noctalia dmenu -i -p "Power"
 )
 
 case ${choice##* } in

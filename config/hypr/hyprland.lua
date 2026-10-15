@@ -216,14 +216,15 @@ hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("noctalia msg panel-open launcher"))
 
 -- The Spotify web app, installed as a Firefox PWA.
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
-
-hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/toggle-waybar"))
+-- Noctalia owns the bar, wallpaper and launcher now, so the wallpaper-switcher
+-- and toggle-waybar bindings are gone with them.
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("noctalia msg settings-open wallpaper"))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("noctalia msg bar-toggle"))
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratch" }))
@@ -385,23 +386,19 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
 	hl.exec_cmd("systemctl --user restart xdg-desktop-portal.service")
 
-	-- Waybar. pkill first: waybar.service exists on this system (currently
-	-- disabled) and if it is ever enabled it would stack a second bar.
-	-- Bar. Waybar is the bar again: DankMaterialShell was tried and removed
-	-- (it needed 1.3 GB RAM - unusable on this 8 GB machine), and the custom
-	-- The earlier custom Quickshell bar is kept at ~/.config/quickshell.
-	-- The music widget is no longer eww - see below.
+	-- Shell. Noctalia replaces waybar (bar), mako (notifications), rofi
+	-- (launcher) and matuwall (wallpaper). It is native C++/OpenGL ES rather
+	-- than Quickshell, and measures ~250 MB resident here - far below the
+	-- 1.3 GB DankMaterialShell needed on this 8 GB machine.
+	--
+	-- pkill first so a stale instance can't stack a second bar.
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
-	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
+	hl.exec_cmd("pkill -x mako 2>/dev/null; true")
 	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
 	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
-	-- The music player is the Quickshell widget at
-	-- ~/.config/quickshell-music-player2. It draws its own pill in the centre of
-	-- the bar (replacing waybar's mpris module) and expands into the player on
-	-- hover, so it owns its own input: there is no toggle script and no state
-	-- file any more. Started ONCE here and left running.
 	hl.exec_cmd("pkill -9 -x quickshell 2>/dev/null; true")
-	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell-music-player2/shell.qml >/dev/null 2>&1 &")
+	hl.exec_cmd("pkill -x noctalia 2>/dev/null; true")
+	hl.exec_cmd("setsid noctalia --daemon >/dev/null 2>&1 &")
 
 	hl.exec_cmd("awww-daemon")
 	hl.exec_cmd(
