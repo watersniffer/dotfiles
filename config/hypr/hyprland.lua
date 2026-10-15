@@ -221,9 +221,11 @@ hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("noctalia msg panel-open launcher
 -- The Spotify web app, installed as a Firefox PWA.
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
--- Noctalia owns the bar, wallpaper and launcher now, so the wallpaper-switcher
--- and toggle-waybar bindings are gone with them.
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("noctalia msg settings-open wallpaper"))
+-- Noctalia owns the bar and launcher now, so toggle-waybar is gone. The
+-- wallpaper switcher survives as a wrapper over Noctalia's own wallpaper IPC
+-- (wallpaper-next / wallpaper-random / wallpaper-set), keeping the old folder
+-- argument that matuwall used to provide.
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
 hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("noctalia msg bar-toggle"))
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
@@ -338,7 +340,7 @@ hl.bind(mainMod .. " + U", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"))
 hl.bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(home .. "/.local/bin/logout-session"))
 hl.bind(mainMod .. " + c", hl.dsp.exec_cmd(home .. "/.local/bin/clipboard-history"))
 
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("noctalia msg session lock"))
 
 -- --- drag and resize with the mouse ---
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -492,3 +494,6 @@ hl.window_rule({
 	match = { class = "^Alacritty$" },
 	no_shadow = true,
 })
+
+-- For Noctalia Color templates
+require("noctalia").apply_theme()

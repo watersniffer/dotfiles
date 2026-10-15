@@ -15,7 +15,6 @@ hyprland=(
   hyprland
   noctalia
   xorg-xwayland
-  hyprlock
   hypridle
   hyprpicker
   grim slurp
@@ -73,7 +72,6 @@ gui=(
 
 # --- Login / session ---
 session=(
-  hyprlock
   hypridle
   wlogout
   greetd-tuigreet
@@ -84,7 +82,6 @@ aur=(
   eww-git
   awww-git
   hypr3d-git
-  hyprlock-git
 )
 
 install_pacman() {
@@ -120,8 +117,8 @@ link_configs() {
   local repo="${1:-$HOME/dotfiles}"
   echo "==> Linking configs from $repo"
 
-  # waybar/rofi/mako/matuwall/quickshell are gone - Noctalia is the shell now.
-  for d in eww hyprlock gtk-3.0 gtk-4.0 nvim qt6ct fastfetch systemd btop hypr; do
+  # waybar/rofi/mako/matuwall/quickshell/hyprlock are gone - Noctalia is the shell.
+  for d in eww gtk-3.0 gtk-4.0 nvim qt6ct fastfetch systemd btop hypr; do
     [ -d "$repo/config/$d" ] || continue
     mkdir -p "$HOME/.config"
     ln -sfn "$repo/config/$d" "$HOME/.config/$d"

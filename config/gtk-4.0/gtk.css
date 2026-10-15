@@ -6360,3 +6360,5 @@ window.thunar toolbar > toolitem > widget > widget.linked.path-bar > button.path
     color: #bd93f9; }
 
 /*# sourceMappingURL=gtk.css.map */
+
+@import url("noctalia.css");
