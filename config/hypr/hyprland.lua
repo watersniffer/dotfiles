@@ -216,17 +216,16 @@ hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
 hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
-hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("noctalia msg panel-open launcher"))
+hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
 
 -- The Spotify web app, installed as a Firefox PWA.
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
--- Noctalia owns the bar and launcher now, so toggle-waybar is gone. The
--- wallpaper switcher survives as a wrapper over Noctalia's own wallpaper IPC
--- (wallpaper-next / wallpaper-random / wallpaper-set), keeping the old folder
--- argument that matuwall used to provide.
+-- wallpaper-switcher opens the wallpaper picker; no toggle exists now.
+-- browser; the search-capable variant binds the browser directly.
 hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
-hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("noctalia msg bar-toggle"))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("qs-wallpaperpicker toggle"))
+
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:scratch" }))
@@ -340,7 +339,7 @@ hl.bind(mainMod .. " + U", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"))
 hl.bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(home .. "/.local/bin/logout-session"))
 hl.bind(mainMod .. " + c", hl.dsp.exec_cmd(home .. "/.local/bin/clipboard-history"))
 
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("noctalia msg session lock"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 
 -- --- drag and resize with the mouse ---
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -388,10 +387,10 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
 	hl.exec_cmd("systemctl --user restart xdg-desktop-portal.service")
 
-	-- Shell. Noctalia replaces waybar (bar), mako (notifications), rofi
-	-- (launcher) and matuwall (wallpaper). It is native C++/OpenGL ES rather
-	-- than Quickshell, and measures ~250 MB resident here - far below the
-	-- 1.3 GB DankMaterialShell needed on this 8 GB machine.
+	-- Waybar is the bar, rofi the launcher, mako the notifications. Quickshell
+	-- runs only the two things that need it: qs-wallpaperpicker (Wallhaven
+	-- wallpaper browser) and quickshell-music-player2 (the media widget bound to
+	-- waybar's mpris module).
 	--
 	-- pkill first so a stale instance can't stack a second bar.
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
@@ -399,14 +398,19 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
 	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
 	hl.exec_cmd("pkill -9 -x quickshell 2>/dev/null; true")
-	hl.exec_cmd("pkill -x noctalia 2>/dev/null; true")
-	hl.exec_cmd("setsid noctalia --daemon >/dev/null 2>&1 &")
+	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
+	hl.exec_cmd("setsid qs-wallpaperpicker >/dev/null 2>&1 &")
+	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell-music-player2/shell.qml >/dev/null 2>&1 &")
 
-	hl.exec_cmd("awww-daemon")
+	hl.exec_cmd("mako")
+
+	-- The wallpaper is drawn by qs-wallpaperpicker itself (it renders a layer
+	-- from ~/.cache/current_wallpaper_source), so awww and swaybg are no longer
+	-- started - three wallpaper daemons were drawing at once. Restored from the
+	-- picker's own record instead, so a login does not come up blank.
 	hl.exec_cmd(
-		"sleep 1; awww restore || awww img -- "
-			.. home
-			.. "/Pictures/Wallpapers/a_river_running_through_a_small_town.jpg"
+		"sleep 2; cur=$(cat /home/water/.cache/current_wallpaper_source 2>/dev/null); "
+			.. "[[ -n $cur ]] && qs-wallpaperpicker set \"$cur\" >/dev/null 2>&1; true"
 	)
 
 	-- Clipboard ownership + history. These used to be started from here, but
@@ -495,5 +499,3 @@ hl.window_rule({
 	no_shadow = true,
 })
 
--- For Noctalia Color templates
-require("noctalia").apply_theme()

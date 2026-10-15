@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+# Toggle Hyprland's blue-light filter (hyprsunset) - bound to the waybar
+# battery percentage module.
+#
+# WHY THIS IS A SCRIPT AND NOT `systemctl --user toggle hyprsunset`
+# ----------------------------------------------------------------
+# hyprsunset ships a systemd unit, so the obvious thing is a toggle. But starting
+# and stopping the unit is not the same thing as turning night light on and off:
+#
+#   * `systemctl start hyprsunset` runs it with NO arguments, so it applies no
+#     temperature at all ("No profile is currently loaded"). The filter would be
+#     running but doing nothing - no visual change.
+#   * The unit is WantedBy=graphical-session.target, so it comes back at every
+#     login regardless of the state you left it in.
+#
+# hyprsunset's IPC socket only accepts `reset` on this build ("set ..." and
+# "get ..." return "invalid command"), so there is no supported way to change the
+# temperature over the socket. The reliable control surface is the process's own
+# command line, so this restarts the unit with an explicit --temperature.
+#
+# State is kept in a small file: the enabled/disabled intent, which survives
+# restarts and is what the toggle flips.
+
+set -uo pipefail
+
+STATE_FILE="${XDG_RUNTIME_DIR:-/tmp}/hyprsunset-enabled"
+TEMP="${HYPRSUNSET_TEMP:-4000}"   # 4000K is a comfortable night reading temperature
+UNIT="hyprsunset.service"
+
+is_enabled() { [ -f "$STATE_FILE" ]; }
+
+enable_filter() {
+    # The packaged unit runs a plain `hyprsunset` that applies NO temperature
+    # and owns the IPC socket. A second instance cannot start while it holds the
+    # socket, so stop the unit first and run our own with an explicit
+    # --temperature. Verified: with the unit running, an extra
+    # `hyprsunset --temperature 4000` dies silently; after stopping it, the
+    # temperature instance starts and reports
+    # "Setting the temperature to 4000K".
+    systemctl --user stop "$UNIT" >/dev/null 2>&1
+    sleep 0.3
+
+    setsid hyprsunset --temperature "$TEMP" >/dev/null 2>&1 </dev/null &
+    disown 2>/dev/null || true
+    sleep 0.4
+
+    : > "$STATE_FILE"
+    notify-send "Night light" "On (${TEMP}K)" -t 1500
+}
+
+disable_filter() {
+    # Kill the temperature instance and let the packaged unit resume, which
+    # applies no profile at all - i.e. colours untouched.
+    for pid in $(pgrep -x hyprsunset 2>/dev/null); do
+        args=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)
+        case "$args" in
+            *hyprsunset\ --temperature*) kill "$pid" 2>/dev/null ;;
+        esac
+    done
+    sleep 0.3
+
+    systemctl --user start "$UNIT" >/dev/null 2>&1
+    rm -f "$STATE_FILE"
+    notify-send "Night light" "Off" -t 1500
+}
+
+# Ensure the service exists and is running; if it died, bring it back.
+if ! systemctl --user is-active --quiet "$UNIT"; then
+    systemctl --user start "$UNIT" >/dev/null 2>&1
+fi
+
+if is_enabled; then
+    disable_filter
+else
+    enable_filter
+fi

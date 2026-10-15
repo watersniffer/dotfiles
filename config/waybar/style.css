@@ -1,0 +1,160 @@
+/* Floating islands: the bar itself is transparent, each module is its own black
+   pill. AMOLED, so black on black with one light accent for text. The right
+   side is one continuous pill (a waybar group) instead of separate islands. */
+
+@import "colors.css";
+
+* {
+    border: none;
+    font-family: "Iosevka Nerd Font", "SF Pro Display", sans-serif;
+    font-size: 10px;
+
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+}
+
+window#waybar {
+    background: transparent;
+    color: @text;
+}
+
+tooltip {
+    background: @base;
+    border: 1px solid @bg3;
+    color: @text;
+    border-radius: 8px;
+}
+
+tooltip label {
+    color: @text;
+}
+
+/* Left + center stay separate islands. */
+#workspaces,
+#mpris {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin: 0 4px;
+}
+
+#workspaces {
+    margin: 0 4px;
+}
+
+#workspaces button {
+    transition: all 150ms ease-in-out;
+    padding: 1px 0px;
+    background: transparent;
+    color: @text;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    margin: 0 1px;
+}
+
+#workspaces button.active {
+    background-color: @text;
+    color: @base;
+    min-width: 22px;
+    border-radius: 6px;
+}
+
+/* The right side is ONE pill: the group container carries the background, and
+   the modules inside it are transparent with a little breathing room. */
+#right {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 4px;
+    margin: 0 4px;
+}
+
+#pulseaudio,
+#backlight,
+#battery,
+#tray,
+#clock {
+    background: transparent;
+    padding: 0 6px;
+    margin: 0;
+    border-radius: 0;
+}
+
+#clock {
+    font-weight: 800;
+}
+
+#mpris {
+    margin: 0 8px;
+}
+
+/* Brightness slider, always visible (module id backlight/slider → GTK name
+   #backlight-slider). Fixed width so it doesn't open a gap; dark trough,
+   AMOLED-accent fill + handle. GTK has no max-width, so min-width sets it. */
+#backlight-slider {
+    min-width: 56px;
+    padding: 0 6px;
+    margin: 0;
+    background: transparent;
+}
+
+#backlight-slider trough {
+    min-width: 56px;
+    min-height: 4px;
+    background: @bg3;
+    border-radius: 4px;
+    margin: 0;
+    padding: 0;
+}
+
+#backlight-slider highlight {
+    min-height: 4px;
+    background: @text;
+    border-radius: 4px;
+}
+
+#backlight-slider slider {
+    min-width: 8px;
+    min-height: 8px;
+    margin: -2px;
+    background: @text;
+    border-radius: 50%;
+    box-shadow: none;
+}
+
+/* cava visualiser — its own pill in the centre, beside mpris. */
+#custom-cava {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin: 0 4px 0 8px;
+    color: @text;
+}
+
+/* Taskbar — its own pill in the centre, left of mpris. */
+#taskbar {
+    background: @base;
+    border-radius: 6px;
+    padding: 2px 6px;
+    margin: 0 4px 0 8px;
+}
+
+#taskbar button {
+    background: transparent;
+    border-radius: 6px;
+    color: @subtext;
+    min-width: 0;
+    padding: 1px 4px;
+    margin: 0 1px;
+    transition: all 150ms ease-in-out;
+}
+
+#taskbar button:hover {
+    background: @bg2;
+    color: @text;
+}
+
+#taskbar button.active {
+    background: @text;
+    color: @base;
+}

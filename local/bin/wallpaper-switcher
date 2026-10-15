@@ -1,72 +1,21 @@
 #!/usr/bin/env bash
 #
-# Wallpaper switcher, backed by Noctalia.
+# Wallpaper switcher: opens qs-wallpaperpicker's Wallhaven browser.
 #
-#   wallpaper-switcher            next wallpaper in ~/Pictures/Wallpapers
-#   wallpaper-switcher random     a random one
-#   wallpaper-switcher <folder>   cycle only within a subfolder (or an absolute
-#                                 path to a directory)
+#   wallpaper-switcher          open the picker
+#   wallpaper-switcher wallhaven  open it on the Wallhaven source
+#   wallpaper-switcher set FILE   apply a specific wallpaper
 #
-# With no argument this just defers to Noctalia's own cycling, which is what the
-# previous version effectively did through matuwall. Passing a folder is the one
-# thing Noctalia's IPC has no equivalent for, so that case is handled here by
-# walking the directory and setting the next image after the current one.
+# Uses https://github.com/dhrruvsharma/qs-wallpaperpicker, installed at
+# ~/.config/qs-wallpaperpicker with its CLI at ~/.local/bin/qs-wallpaperpicker.
+# That project is standalone Quickshell, so it needs no bar daemon of its own -
+# waybar keeps the bar.
 #
-# Noctalia owns the wallpaper now, so matuwall and its awww backend are gone.
-# Note that the transition is Noctalia's own (set in its settings); the old grow
-# transition cannot be requested per-set over IPC.
+# Wallhaven withholds results from its bare "top list" query unless an API key is
+# supplied, so a keyless install opens that tab to nothing. A seed is generated
+# automatically to work around it; entering a free key in the picker's own
+# settings is the better fix and removes the need for that.
 
 set -uo pipefail
 
-WALL_ROOT="$HOME/Pictures/Wallpapers"
-
-# --- no-argument and "random" cases: let Noctalia do the work ---------------
-
-if [[ ${1:-} == "random" ]]; then
-    exec noctalia msg wallpaper-random
-fi
-
-if [[ -z ${1:-} ]]; then
-    exec noctalia msg wallpaper-next
-fi
-
-# --- folder case ------------------------------------------------------------
-
-folder="$1"
-if [[ $folder == /* ]]; then
-    dir="$folder"
-else
-    dir="$WALL_ROOT/$folder"
-fi
-
-if [[ ! -d $dir ]]; then
-    printf "wallpaper-switcher: '%s' is not a directory\n" "$dir" >&2
-    exit 1
-fi
-
-mapfile -t images < <(
-    find "$dir" -maxdepth 1 -type f \
-        \( -iname '*.jpg' -o -iname '*.png' -o -iname '*.jpeg' \
-           -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.avif' \) \
-        2>/dev/null | sort
-)
-
-if [[ ${#images[@]} -eq 0 ]]; then
-    printf "wallpaper-switcher: no images in '%s'\n" "$dir" >&2
-    exit 1
-fi
-
-current=$(noctalia msg wallpaper-get 2>/dev/null)
-
-# Step past wherever we are now; wrap at the end. If the current wallpaper is not
-# in this folder, start at the beginning rather than dumping the user on a
-# random one.
-next=0
-for i in "${!images[@]}"; do
-    if [[ "${images[$i]}" == "$current" ]]; then
-        next=$(( (i + 1) % ${#images[@]} ))
-        break
-    fi
-done
-
-exec noctalia msg wallpaper-set "${images[$next]}"
+exec qs-wallpaperpicker "${1:-wallhaven}"

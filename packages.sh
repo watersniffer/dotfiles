@@ -13,10 +13,12 @@ base=(
 # --- Hyprland session ---
 hyprland=(
   hyprland
-  noctalia
+  waybar
+  mako
   xorg-xwayland
   hypridle
   hyprpicker
+  rofi
   grim slurp
   swappy
   ffmpeg
@@ -42,7 +44,7 @@ tools=(
   wl-clipboard
   cliphist
   matugen
-  awww
+  quickshell
   hypr3d-git
   mpv
   cava
@@ -80,7 +82,6 @@ session=(
 # --- AUR ---
 aur=(
   eww-git
-  awww-git
   hypr3d-git
 )
 
@@ -117,8 +118,9 @@ link_configs() {
   local repo="${1:-$HOME/dotfiles}"
   echo "==> Linking configs from $repo"
 
-  # waybar/rofi/mako/matuwall/quickshell/hyprlock are gone - Noctalia is the shell.
-  for d in eww gtk-3.0 gtk-4.0 nvim qt6ct fastfetch systemd btop hypr; do
+  # waybar + rofi + mako are the shell; Quickshell runs only
+  # qs-wallpaperpicker and the media player widget.
+  for d in waybar rofi mako eww gtk-3.0 gtk-4.0 nvim qt6ct fastfetch systemd btop hypr; do
     [ -d "$repo/config/$d" ] || continue
     mkdir -p "$HOME/.config"
     ln -sfn "$repo/config/$d" "$HOME/.config/$d"
