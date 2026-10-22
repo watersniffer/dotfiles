@@ -32,8 +32,8 @@ window {
     /* The rounded corners only show because every container inside is
        transparent and the window itself is the translucent one. */
     border-radius: 10px;
-    border: 2px;
-    border-color: @bg3;
+    border: 0px;
+    border-color: transparent;
 
     background-color: @windowBg;
 }
@@ -48,8 +48,8 @@ mainbox {
 inputbar {
     background-color: @surfaceBg;
     border-radius: 8px;
-    border: 1px;
-    border-color: @borderSoft;
+    border: 0px;
+    border-color: transparent;
 
     padding: 8px 16px;
     spacing: 8px;
@@ -130,8 +130,8 @@ element-text {
 message {
     margin: 12px 0 0;
     border-radius: 10px;
-    border: 1px;
-    border-color: @borderSoft;
+    border: 0px;
+    border-color: transparent;
 
     background-color: @surfaceBg;
 }

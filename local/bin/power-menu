@@ -2,8 +2,6 @@
 #
 # Power menu. Logout goes through logout-session; the rationale for not using
 # wlogout's own button lives in that script.
-#
-# Glyphs are Nerd Font codepoints, rendered by Noctalia with the system font.
 
 set -uo pipefail
 
@@ -16,13 +14,13 @@ choice=$(
 		$'\uf240  Hibernate' \
 		$'\uf021  Reboot' \
 		$'\uf015  Shutdown' |
-		noctalia dmenu -i -p "Power"
+		rofi -dmenu -i -p "Power" -no-custom -font "Iosevka Nerd Font 11"
 )
 
 case ${choice##* } in
 	Cancel|"") exit 0 ;;
 	Logout) "$HOME/.local/bin/logout-session" ;;
-	Lock) loginctl lock-session ;;
+	Lock) hyprlock ;;
 	Suspend) systemctl suspend ;;
 	Hibernate) systemctl hibernate ;;
 	Reboot) systemctl reboot ;;

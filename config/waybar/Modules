@@ -55,12 +55,28 @@
         "persistent-workspaces": { "*": 5 }
     },
 
-    // "mpris" was removed here: the player is now a Quickshell surface that
-    // draws its own bar pill and expands into the player on hover. Its
-    // middle-click, right-click and scroll bindings are reproduced in
-    // ~/.config/quickshell-music-player2/shell.qml.
+    "mpris": {
+        "format": "{player_icon} {artist} - {title}",
+        "format-paused": "{status_icon} {artist} - {title}",
+        "format-stopped": "",
+        "player-icons": {
+            "default": "󰎆",
+            "spotify": "󰓇",
+            "firefox": "󰈹"
+        },
+        "status-icons": {
+            "paused": "󰏤",
+            "playing": "󰐊",
+            "stopped": "󰓛"
+        },
+        "max-length": 50,
+        "tooltip": false,
+        "on-click": "$HOME/.local/bin/eww-music-toggle",
+        "on-click-middle": "playerctl play-pause",
+        "on-scroll-up": "playerctl next",
+        "on-scroll-down": "playerctl previous"
+    },
 
-    
     "wlr/taskbar": {
         "show-tabs": false,
         "show-windows": true,

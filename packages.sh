@@ -32,8 +32,7 @@ hyprland=(
 # --- Shell / tools ---
 tools=(
   zsh fish starship
-  kitty alacritty
-  thunar
+  kitty
   git-delta
   btop fastfetch
   cava
@@ -44,7 +43,6 @@ tools=(
   wl-clipboard
   cliphist
   matugen
-  quickshell
   hypr3d-git
   mpv
   cava
@@ -58,15 +56,11 @@ fonts=(
   noto-fonts-emoji
 )
 
-# --- GTK / Qt theming ---
 gui=(
   gtk3
   gtk4
   libadwaita
-  qt5ct
-  qt6ct
-  qt5-wayland
-  qt6-wayland
+  polkit-gnome
   adwaita-icon-theme
   papirus-icon-theme
   bibata-modern-ice
@@ -118,9 +112,7 @@ link_configs() {
   local repo="${1:-$HOME/dotfiles}"
   echo "==> Linking configs from $repo"
 
-  # waybar + rofi + mako are the shell; Quickshell runs only
-  # qs-wallpaperpicker and the media player widget.
-  for d in waybar rofi mako eww gtk-3.0 gtk-4.0 nvim qt6ct fastfetch systemd btop hypr; do
+  for d in waybar rofi mako eww matuwall gtk-3.0 gtk-4.0 nvim fastfetch systemd btop hypr; do
     [ -d "$repo/config/$d" ] || continue
     mkdir -p "$HOME/.config"
     ln -sfn "$repo/config/$d" "$HOME/.config/$d"

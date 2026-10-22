@@ -1,0 +1,6 @@
+[general]
+directory = "/home/water/Pictures/Wallpapers"
+backend = "awww"
+
+[backend.awww]
+args = ["--transition-type", "grow", "--transition-pos", "center", "--transition-duration", "1.2", "--transition-fps", "60"]

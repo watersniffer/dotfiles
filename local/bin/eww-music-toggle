@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+CONFIG="$HOME/.config/eww"
+
+export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+
+if ! eww -c "$CONFIG" ping >/dev/null 2>&1; then
+    setsid eww -c "$CONFIG" daemon >/dev/null 2>&1 </dev/null &
+    for _ in $(seq 1 50); do
+        eww -c "$CONFIG" ping >/dev/null 2>&1 && break
+        sleep 0.1
+    done
+fi
+
+if eww -c "$CONFIG" active-windows 2>/dev/null | grep -q 'music-widget$'; then
+    eww -c "$CONFIG" close music-widget
+else
+    eww -c "$CONFIG" open music-widget
+fi

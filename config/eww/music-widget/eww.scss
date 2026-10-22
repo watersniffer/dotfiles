@@ -13,39 +13,20 @@ $padding: 16px;
   font-family: $font-family;
 }
 
-/* Entrance animation.
- *
- * GTK3 DOES support @keyframes - the earlier claim that it did not was wrong.
- * The docs (docs.gtk.org/gtk3/css-overview.html) define:
- *
- *     @keyframes <name> { from { ... } to { ... } <percentage> { ... } }
- *
- * enabled with animation-name / animation-duration / animation-timing-function.
- *
- * This is far better than the previous defpoll + :style approach because the
- * animation starts by itself when the window is created - no timing tricks, no
- * marker file, and it replays on every open.
- *
- * The keyframe at 0% uses a negative margin-top equal to the widget height, so
- * its content starts parked above the visible area (clipped by the window
- * surface) and glides down out from under the bar while fading in.
- */
-@keyframes music-slide-in {
+@keyframes music-fade-in {
   from {
     opacity: 0;
-    margin-top: -170px;
   }
   to {
     opacity: 1;
-    margin-top: 0px;
   }
 }
 
 .music-widget {
-  animation-name: music-slide-in;
-  animation-duration: 2500ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  background-color: #ff00ff;
+  animation-name: music-fade-in;
+  animation-duration: 160ms;
+  animation-timing-function: ease-out;
+  background-color: $bg-color;
   border-radius: $border-radius;
   padding: $padding;
   border: 1px solid rgba(255, 255, 255, 0.08);

@@ -7,8 +7,7 @@ hl.monitor({
 
 -- Set programs that you use
 local home = os.getenv("HOME") or "/home/water"
-local terminal = "alacritty"
-local fileManager = "thunar"
+local terminal = "kitty"
 local menu = "hyprlauncher"
 
 hl.on("hyprland.start", function()
@@ -40,7 +39,7 @@ end
 hl.config({
 	general = {
 		gaps_in = 5,
-		gaps_out = 5,
+		gaps_out = 9,
 
 		border_size = 0,
 
@@ -63,14 +62,14 @@ hl.config({
 		rounding_power = 2,
 
 		-- Change transparency of focused and unfocused windows
-		active_opacity = 1.0,
-		inactive_opacity = 1.0,
+		active_opacity = 0.90,
+		inactive_opacity = 0.90,
 
 		shadow = {
 			enabled = true,
-			range = 4,
+			range = 16,
 			render_power = 3,
-			color = "0x000000ff",
+			color = theme.shadow_color,
 		},
 
 		blur = {
@@ -106,10 +105,10 @@ hl.animation({ leaf = "fadeOut", enabled = true, speed = 0.2, bezier = "quick" }
 hl.animation({ leaf = "fade", enabled = true, speed = 0.6, bezier = "quick" })
 
 hl.animation({ leaf = "layers", enabled = false })
-hl.animation({ leaf = "layersIn", enabled = false })
-hl.animation({ leaf = "layersOut", enabled = false })
-hl.animation({ leaf = "fadeLayersIn", enabled = false })
-hl.animation({ leaf = "fadeLayersOut", enabled = false })
+hl.animation({ leaf = "layersIn", enabled = true, speed = 3, bezier = "bounce", style = "popin" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 2.5, bezier = "quick", style = "popin" })
+hl.animation({ leaf = "fadeLayersIn", enabled = true, speed = 2, bezier = "quick" })
+hl.animation({ leaf = "fadeLayersOut", enabled = true, speed = 1.5, bezier = "quick" })
 hl.animation({ leaf = "workspaces", enabled = true, speed = 4, bezier = "bounce", style = "slide" })
 hl.animation({ leaf = "workspacesIn", enabled = true, speed = 4, bezier = "bounce", style = "slide" })
 hl.animation({ leaf = "workspacesOut", enabled = true, speed = 3, bezier = "quick", style = "slide" })
@@ -118,6 +117,24 @@ hl.animation({ leaf = "zoomFactor", enabled = true, speed = 6, bezier = "quick" 
 
 hl.animation({ leaf = "specialWorkspaceIn", enabled = true, speed = 2.5, bezier = "bounce", style = "slidevert" })
 hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2.5, bezier = "quick", style = "slidevert" })
+
+hl.layer_rule({
+	name = "rofi-popup",
+	match = { namespace = "^rofi$" },
+	animation = "popin",
+})
+
+hl.layer_rule({
+	name = "waybar-no-anim",
+	match = { namespace = "^main$" },
+	no_anim = true,
+})
+
+hl.layer_rule({
+	name = "wallpaper-no-anim",
+	match = { namespace = "^awww-daemon$" },
+	no_anim = true,
+})
 
 -- See https://wiki.hypr.land/Configuring/Layouts/Dwindle-Layout/ for more
 hl.config({
@@ -189,15 +206,9 @@ local _path = os.getenv("PATH") or ""
 if _path:sub(1, #_bin) ~= _bin then
 	hl.env("PATH", _bin .. ":" .. _path)
 end
-hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
-hl.env("QT_STYLE_OVERRIDE", "kvantum")
-hl.env("QT_SCALE_FACTOR", "0.90")
--- Krita (and other KDE apps) override qt6ct's [Fonts], so force the family
--- directly for all Qt apps instead.
-hl.env("QT_FONT_FAMILY", "Iosevka Nerd Font")
 hl.env("EDITOR", "nvim")
 hl.env("VISUAL", "nvim")
-hl.env("TERMINAL", "alacritty")
+hl.env("TERMINAL", "kitty")
 
 -- Cursor theme and size. These have to be in HYPRLAND's own environment, not
 -- just an interactive shell's: the compositor reads them when it spawns
@@ -214,17 +225,14 @@ local stepH = 76
 -- --- launchers; the app launcher is Super+Space, as in niri ---
 hl.bind(mainMod .. " + Return", hl.dsp.exec_cmd(terminal))
 
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + ALT + E", hl.dsp.exec_cmd("alacritty -e yazi"))
+hl.bind(mainMod .. " + SHIFT + E", hl.dsp.exec_cmd(terminal .. " -e yazi"))
 hl.bind(mainMod .. " + Space", hl.dsp.exec_cmd("rofi -show drun"))
 
 -- The Spotify web app, installed as a Firefox PWA.
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("limusic-app"))
 
--- wallpaper-switcher opens the wallpaper picker; no toggle exists now.
--- browser; the search-capable variant binds the browser directly.
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd(home .. "/.local/bin/wallpaper-switcher"))
-hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd("qs-wallpaperpicker toggle"))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("matuwall"))
+hl.bind(mainMod .. " + SHIFT + W", hl.dsp.exec_cmd(home .. "/.local/bin/random-wallpaper"))
 
 hl.bind(mainMod .. " + comma", hl.dsp.exec_cmd("smile"))
 hl.bind(mainMod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
@@ -335,11 +343,10 @@ for i = 1, 10 do
 	hl.bind(mainMod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
 
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + U", hl.dsp.exec_cmd(home .. "/.local/bin/power-menu"))
 hl.bind(mainMod .. " + SHIFT + U", hl.dsp.exec_cmd(home .. "/.local/bin/logout-session"))
 hl.bind(mainMod .. " + c", hl.dsp.exec_cmd(home .. "/.local/bin/clipboard-history"))
-
-hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("hyprlock"))
 
 -- --- drag and resize with the mouse ---
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(), { mouse = true })
@@ -354,11 +361,8 @@ hl.bind("ALT + Print", hl.dsp.exec_cmd('grim -g "$(echo ' .. winRegion .. ')" - 
 -- automatically, unlike flameshot (a 73MB Qt app that needs Ctrl+C pressed).
 -- Screenshots: slurp + grim, no daemon (~0 MB idle). Each one lands on the
 -- clipboard AND saves to ~/Pictures/Screenshots, then notifies via mako.
--- NOTE: in this Lua API an uppercase letter in a key string means Shift is part
--- of the binding, so these use lowercase "p"/"v".
 hl.bind("SUPER + p", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot region"))
 hl.bind("SHIFT + Print", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot full"))
-hl.bind("SUPER + v", hl.dsp.exec_cmd(home .. "/.local/bin/screenshot window"))
 
 hl.bind(
 	"XF86AudioRaiseVolume",
@@ -387,30 +391,20 @@ hl.on("hyprland.start", function()
 	hl.exec_cmd("pkill -x dunst 2>/dev/null; true")
 	hl.exec_cmd("systemctl --user restart xdg-desktop-portal.service")
 
-	-- Waybar is the bar, rofi the launcher, mako the notifications. Quickshell
-	-- runs only the two things that need it: qs-wallpaperpicker (Wallhaven
-	-- wallpaper browser) and quickshell-music-player2 (the media widget bound to
-	-- waybar's mpris module).
 	--
 	-- pkill first so a stale instance can't stack a second bar.
 	hl.exec_cmd("pkill -x waybar 2>/dev/null; true")
 	hl.exec_cmd("pkill -x mako 2>/dev/null; true")
 	hl.exec_cmd("pkill -x cava 2>/dev/null; true")
 	hl.exec_cmd("pkill -x eww 2>/dev/null; true")
-	hl.exec_cmd("pkill -9 -x quickshell 2>/dev/null; true")
 	hl.exec_cmd("waybar -c " .. home .. "/.config/waybar/config-hypr.jsonc -s " .. home .. "/.config/waybar/style.css")
-	hl.exec_cmd("setsid qs-wallpaperpicker >/dev/null 2>&1 &")
-	hl.exec_cmd("setsid quickshell -p " .. home .. "/.config/quickshell-music-player2/shell.qml >/dev/null 2>&1 &")
 
 	hl.exec_cmd("mako")
 
-	-- The wallpaper is drawn by qs-wallpaperpicker itself (it renders a layer
-	-- from ~/.cache/current_wallpaper_source), so awww and swaybg are no longer
-	-- started - three wallpaper daemons were drawing at once. Restored from the
-	-- picker's own record instead, so a login does not come up blank.
 	hl.exec_cmd(
-		"sleep 2; cur=$(cat /home/water/.cache/current_wallpaper_source 2>/dev/null); "
-			.. "[[ -n $cur ]] && qs-wallpaperpicker set \"$cur\" >/dev/null 2>&1; true"
+		"pgrep -x awww-daemon >/dev/null || (awww-daemon >/dev/null 2>&1 &); "
+			.. "sleep 1; cur=$(cat /home/water/.local/state/matuwall/last-selection 2>/dev/null); "
+			.. '[[ -n $cur ]] && awww img "$cur" >/dev/null 2>&1; true'
 	)
 
 	-- Clipboard ownership + history. These used to be started from here, but
@@ -422,13 +416,11 @@ hl.on("hyprland.start", function()
 
 	-- Session services.
 	hl.exec_cmd("nm-applet")
-	hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")
+	hl.exec_cmd("/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1")
 
 	-- EasyEffects audio daemon, started HIDDEN so it only lives in the tray.
 	-- EasyEffects 8.3.0 has no --minimized flag; --hide-window is its
 	-- equivalent - effects stay applied while the window stays out of the way.
-	-- Alacritty used to be started here; removed so no terminal pops open at
-	-- login. It still launches on demand from Super+Return etc.
 	hl.exec_cmd("pkill -x easyeffects 2>/dev/null; true")
 	hl.exec_cmd("sleep 2; easyeffects --hide-window")
 
@@ -467,35 +459,3 @@ hl.window_rule({
 	move = "20 monitor_h-120",
 	float = true,
 })
-
-hl.window_rule({
-	name = "planify-special-workspace",
-	match = { class = "^(io.github.alainm23.planify)$" },
-
-	workspace = "special:planify",
-})
-
-hl.window_rule({
-	name = "planify-floating",
-	match = { class = "^(io.github.alainm23.planify)$" },
-
-	float = true,
-	size = "812 568",
-	move = "276 44",
-})
-
-hl.window_rule({
-	name = "dankcalendar-special-workspace",
-	match = { class = "^com[.]danklinux[.]dankcalendar$" },
-
-	workspace = "special:dank",
-})
-
--- No float/size/move rule for Dank Calendar: it tiles like any other window.
-
-hl.window_rule({
-	name = "terminal-no-shadow",
-	match = { class = "^Alacritty$" },
-	no_shadow = true,
-})
-
